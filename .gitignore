@@ -1,0 +1,34 @@
+.DS_Store
+Thumbs.db
+
+# Python caches and local environments
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local secrets and machine-specific config
+.env
+.env.*
+config.json
+*.pem
+*.key
+
+# Generated datasets, reports, and training outputs
+artifacts/
+logs/
+runs/
+data/
+
+# Model checkpoints and downloaded weights
+models/*.pt
+*.pt
+
+# Keep placeholders if they are added later
+!data/.gitkeep
+!models/.gitkeep

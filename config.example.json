@@ -1,0 +1,16 @@
+{
+  "catalogPath": "../ai-schema-view/schema-md/catalog.md",
+  "artifactRoot": "artifacts",
+  "yoloModel": "models/yolo_screen_components_demo.pt",
+  "graphModel": "models/graph_transformer_demo.pt",
+  "referenceLibrary": "data/component-reference",
+  "topK": 1,
+  "multimodalClassifier": true,
+  "multimodalModel": "deepseek-v4-flash",
+  "multimodalBaseUrl": "https://api.deepseek.com/v4",
+  "env": {
+    "SCREEN_PARSER_VLM_API_KEY": "sk-be1cf649db9548abb3b294e710efb774",
+    "SCREEN_PARSER_VLM_MODEL": "deepseek-v4-flash",
+    "SCREEN_PARSER_VLM_BASE_URL": "https://api.deepseek.com/v4"
+  }
+}
