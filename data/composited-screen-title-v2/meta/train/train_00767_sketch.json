@@ -1,0 +1,618 @@
+{
+  "width": 960,
+  "height": 540,
+  "inputType": "sketch",
+  "nodes": [
+    {
+      "nodeId": "node_title_0000",
+      "parentId": "screen_0000",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 297.6,
+        "y": 24.25,
+        "w": 364.8,
+        "h": 44.12
+      },
+      "text": "智能监管检测系统大屏",
+      "role": "screenTitle"
+    },
+    {
+      "nodeId": "panel_0000",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border11",
+      "level": 2,
+      "bbox": {
+        "x": 247.61,
+        "y": 80.08,
+        "w": 200.35,
+        "h": 124.16
+      }
+    },
+    {
+      "nodeId": "panel_0000_title",
+      "parentId": "panel_0000",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 276.0,
+        "y": 90.13,
+        "w": 149.41,
+        "h": 24.36
+      },
+      "text": "平台分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0000_content",
+      "parentId": "panel_0000",
+      "type": "Chart",
+      "componentId": "TreeMap",
+      "level": 4,
+      "bbox": {
+        "x": 258.0,
+        "y": 136.0,
+        "w": 175.0,
+        "h": 58.0
+      }
+    },
+    {
+      "nodeId": "panel_0000_overlay",
+      "parentId": "panel_0000",
+      "type": "Border",
+      "componentId": "Border13",
+      "level": 2,
+      "bbox": {
+        "x": 311.0,
+        "y": 165.0,
+        "w": 31.0,
+        "h": 22.0
+      }
+    },
+    {
+      "nodeId": "panel_0001",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border08",
+      "level": 2,
+      "bbox": {
+        "x": 725.54,
+        "y": 376.68,
+        "w": 208.7,
+        "h": 132.27
+      }
+    },
+    {
+      "nodeId": "panel_0001_title",
+      "parentId": "panel_0001",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 762.82,
+        "y": 385.83,
+        "w": 134.14,
+        "h": 25.2
+      },
+      "text": "安全事件统计",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0001_content",
+      "parentId": "panel_0001",
+      "type": "Chart",
+      "componentId": "LineGradients",
+      "level": 4,
+      "bbox": {
+        "x": 740.0,
+        "y": 426.0,
+        "w": 180.0,
+        "h": 70.0
+      }
+    },
+    {
+      "nodeId": "panel_0001_decorate",
+      "parentId": "panel_0001",
+      "type": "Decorate",
+      "componentId": null,
+      "level": 3,
+      "bbox": {
+        "x": 876.1,
+        "y": 386.68,
+        "w": 46.15,
+        "h": 17.05
+      }
+    },
+    {
+      "nodeId": "panel_0002",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border04",
+      "level": 2,
+      "bbox": {
+        "x": 249.62,
+        "y": 384.89,
+        "w": 212.32,
+        "h": 137.22
+      }
+    },
+    {
+      "nodeId": "panel_0002_title",
+      "parentId": "panel_0002",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 283.6,
+        "y": 395.81,
+        "w": 144.37,
+        "h": 23.47
+      },
+      "text": "风险预警",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0002_content",
+      "parentId": "panel_0002",
+      "type": "Chart",
+      "componentId": "Graph",
+      "level": 4,
+      "bbox": {
+        "x": 262.0,
+        "y": 439.0,
+        "w": 187.0,
+        "h": 72.0
+      }
+    },
+    {
+      "nodeId": "panel_0002_overlay",
+      "parentId": "panel_0002",
+      "type": "Chart",
+      "componentId": "PieCircle",
+      "level": 4,
+      "bbox": {
+        "x": 332.0,
+        "y": 446.0,
+        "w": 107.0,
+        "h": 43.0
+      }
+    },
+    {
+      "nodeId": "panel_0003",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 18.02,
+        "y": 389.36,
+        "w": 203.55,
+        "h": 124.75
+      }
+    },
+    {
+      "nodeId": "panel_0003_title",
+      "parentId": "panel_0003",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 47.73,
+        "y": 399.73,
+        "w": 144.14,
+        "h": 23.08
+      },
+      "text": "服务分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0003_content",
+      "parentId": "panel_0003",
+      "type": "MetricCard",
+      "componentId": "FlipperNumber",
+      "level": 4,
+      "bbox": {
+        "x": 84.0,
+        "y": 441.0,
+        "w": 77.0,
+        "h": 55.0
+      }
+    },
+    {
+      "nodeId": "panel_0004",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border01",
+      "level": 2,
+      "bbox": {
+        "x": 478.55,
+        "y": 72.56,
+        "w": 214.43,
+        "h": 137.32
+      }
+    },
+    {
+      "nodeId": "panel_0004_title",
+      "parentId": "panel_0004",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 492.65,
+        "y": 80.15,
+        "w": 108.0,
+        "h": 24.77
+      },
+      "text": "业务链梳理",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0004_content",
+      "parentId": "panel_0004",
+      "type": "Chart",
+      "componentId": "Pie3DExploded",
+      "level": 4,
+      "bbox": {
+        "x": 494.0,
+        "y": 120.0,
+        "w": 186.0,
+        "h": 78.0
+      }
+    },
+    {
+      "nodeId": "panel_0004_overlay",
+      "parentId": "panel_0004",
+      "type": "MetricCard",
+      "componentId": "WaterPolo",
+      "level": 4,
+      "bbox": {
+        "x": 504.0,
+        "y": 133.0,
+        "w": 43.0,
+        "h": 31.0
+      }
+    },
+    {
+      "nodeId": "panel_0005",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border14",
+      "level": 2,
+      "bbox": {
+        "x": 497.72,
+        "y": 226.67,
+        "w": 208.12,
+        "h": 135.71
+      }
+    },
+    {
+      "nodeId": "panel_0005_title",
+      "parentId": "panel_0005",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 532.4,
+        "y": 234.37,
+        "w": 138.76,
+        "h": 23.03
+      },
+      "text": "攻击趋势",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0005_content",
+      "parentId": "panel_0005",
+      "type": "Border",
+      "componentId": "Border13",
+      "level": 2,
+      "bbox": {
+        "x": 509.0,
+        "y": 275.0,
+        "w": 185.0,
+        "h": 70.0
+      }
+    },
+    {
+      "nodeId": "panel_0005_overlay",
+      "parentId": "panel_0005",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 585.0,
+        "y": 288.0,
+        "w": 91.0,
+        "h": 4.0
+      }
+    },
+    {
+      "nodeId": "panel_0006",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border12",
+      "level": 2,
+      "bbox": {
+        "x": 486.4,
+        "y": 386.37,
+        "w": 200.82,
+        "h": 124.75
+      }
+    },
+    {
+      "nodeId": "panel_0006_title",
+      "parentId": "panel_0006",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 515.01,
+        "y": 394.46,
+        "w": 143.59,
+        "h": 22.0
+      },
+      "text": "业务链梳理",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0006_content",
+      "parentId": "panel_0006",
+      "type": "Border",
+      "componentId": "Border07",
+      "level": 2,
+      "bbox": {
+        "x": 500.0,
+        "y": 432.0,
+        "w": 169.0,
+        "h": 63.0
+      }
+    },
+    {
+      "nodeId": "panel_0007",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border07",
+      "level": 2,
+      "bbox": {
+        "x": 32.11,
+        "y": 72.79,
+        "w": 209.71,
+        "h": 129.96
+      }
+    },
+    {
+      "nodeId": "panel_0007_title",
+      "parentId": "panel_0007",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 66.97,
+        "y": 80.23,
+        "w": 139.98,
+        "h": 22.0
+      },
+      "text": "责任单位",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0007_content",
+      "parentId": "panel_0007",
+      "type": "Chart",
+      "componentId": "Pie3DRingRegion",
+      "level": 4,
+      "bbox": {
+        "x": 48.0,
+        "y": 119.0,
+        "w": 182.0,
+        "h": 69.0
+      }
+    },
+    {
+      "nodeId": "panel_0008",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 723.85,
+        "y": 230.43,
+        "w": 207.2,
+        "h": 131.46
+      }
+    },
+    {
+      "nodeId": "panel_0008_title",
+      "parentId": "panel_0008",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 733.85,
+        "y": 239.4,
+        "w": 116.8,
+        "h": 22.41
+      },
+      "text": "安全告警",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0008_content",
+      "parentId": "panel_0008",
+      "type": "MetricCard",
+      "componentId": "Number",
+      "level": 4,
+      "bbox": {
+        "x": 791.0,
+        "y": 288.0,
+        "w": 77.0,
+        "h": 55.0
+      }
+    },
+    {
+      "nodeId": "panel_0009",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border02",
+      "level": 2,
+      "bbox": {
+        "x": 21.23,
+        "y": 226.54,
+        "w": 216.64,
+        "h": 130.8
+      }
+    },
+    {
+      "nodeId": "panel_0009_title",
+      "parentId": "panel_0009",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 64.04,
+        "y": 233.58,
+        "w": 119.46,
+        "h": 24.02
+      },
+      "text": "学力分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0009_content",
+      "parentId": "panel_0009",
+      "type": "MetricCard",
+      "componentId": "Dial",
+      "level": 4,
+      "bbox": {
+        "x": 80.0,
+        "y": 273.0,
+        "w": 95.0,
+        "h": 68.0
+      }
+    },
+    {
+      "nodeId": "panel_0009_overlay",
+      "parentId": "panel_0009",
+      "type": "Chart",
+      "componentId": "Pie3DTwoCyan",
+      "level": 4,
+      "bbox": {
+        "x": 107.0,
+        "y": 291.0,
+        "w": 45.0,
+        "h": 26.0
+      }
+    },
+    {
+      "nodeId": "panel_0010",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 719.48,
+        "y": 78.58,
+        "w": 215.62,
+        "h": 129.94
+      }
+    },
+    {
+      "nodeId": "panel_0010_title",
+      "parentId": "panel_0010",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 773.29,
+        "y": 86.66,
+        "w": 108.0,
+        "h": 24.77
+      },
+      "text": "安全告警",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0010_content",
+      "parentId": "panel_0010",
+      "type": "MetricCard",
+      "componentId": "Clock",
+      "level": 4,
+      "bbox": {
+        "x": 786.0,
+        "y": 134.0,
+        "w": 84.0,
+        "h": 60.0
+      }
+    },
+    {
+      "nodeId": "panel_0010_decorate",
+      "parentId": "panel_0010",
+      "type": "Decorate",
+      "componentId": null,
+      "level": 3,
+      "bbox": {
+        "x": 878.87,
+        "y": 88.58,
+        "w": 44.24,
+        "h": 15.91
+      }
+    },
+    {
+      "nodeId": "panel_0011",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 259.13,
+        "y": 227.77,
+        "w": 203.78,
+        "h": 134.28
+      }
+    },
+    {
+      "nodeId": "panel_0011_title",
+      "parentId": "panel_0011",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 297.7,
+        "y": 238.01,
+        "w": 126.64,
+        "h": 22.15
+      },
+      "text": "任务状态",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0011_content",
+      "parentId": "panel_0011",
+      "type": "Table",
+      "componentId": "TableScrollBoard",
+      "level": 4,
+      "bbox": {
+        "x": 273.0,
+        "y": 279.0,
+        "w": 176.0,
+        "h": 71.0
+      }
+    },
+    {
+      "nodeId": "panel_0011_overlay",
+      "parentId": "panel_0011",
+      "type": "Border",
+      "componentId": "Border12",
+      "level": 2,
+      "bbox": {
+        "x": 319.0,
+        "y": 290.0,
+        "w": 38.0,
+        "h": 27.0
+      }
+    }
+  ]
+}

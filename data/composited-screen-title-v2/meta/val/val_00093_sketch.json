@@ -1,0 +1,566 @@
+{
+  "width": 960,
+  "height": 540,
+  "inputType": "sketch",
+  "nodes": [
+    {
+      "nodeId": "node_title_0000",
+      "parentId": "screen_0000",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 230.4,
+        "y": 16.0,
+        "w": 499.2,
+        "h": 47.58
+      },
+      "text": "业务态势分析大屏",
+      "role": "screenTitle"
+    },
+    {
+      "nodeId": "panel_0000",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 706.7,
+        "y": 377.01,
+        "w": 200.92,
+        "h": 135.7
+      }
+    },
+    {
+      "nodeId": "panel_0000_title",
+      "parentId": "panel_0000",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 740.61,
+        "y": 387.29,
+        "w": 133.1,
+        "h": 26.61
+      },
+      "text": "业务链梳理",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0000_content",
+      "parentId": "panel_0000",
+      "type": "Border",
+      "componentId": "Border10",
+      "level": 2,
+      "bbox": {
+        "x": 721.0,
+        "y": 434.0,
+        "w": 174.0,
+        "h": 61.0
+      }
+    },
+    {
+      "nodeId": "panel_0001",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border09",
+      "level": 2,
+      "bbox": {
+        "x": 263.39,
+        "y": 377.49,
+        "w": 210.73,
+        "h": 132.03
+      }
+    },
+    {
+      "nodeId": "panel_0001_title",
+      "parentId": "panel_0001",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 312.37,
+        "y": 385.6,
+        "w": 151.75,
+        "h": 22.0
+      },
+      "text": "调用分布指数",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0001_content",
+      "parentId": "panel_0001",
+      "type": "Table",
+      "componentId": "AlarmList",
+      "level": 4,
+      "bbox": {
+        "x": 277.0,
+        "y": 427.0,
+        "w": 186.0,
+        "h": 70.0
+      }
+    },
+    {
+      "nodeId": "panel_0002",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border14",
+      "level": 2,
+      "bbox": {
+        "x": 729.38,
+        "y": 79.52,
+        "w": 216.95,
+        "h": 135.31
+      }
+    },
+    {
+      "nodeId": "panel_0002_title",
+      "parentId": "panel_0002",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 777.57,
+        "y": 89.1,
+        "w": 120.56,
+        "h": 23.08
+      },
+      "text": "业务链梳理",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0002_content",
+      "parentId": "panel_0002",
+      "type": "Decorate",
+      "componentId": "FullScreen",
+      "level": 3,
+      "bbox": {
+        "x": 785.0,
+        "y": 127.0,
+        "w": 103.0,
+        "h": 73.0
+      }
+    },
+    {
+      "nodeId": "panel_0003",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border01",
+      "level": 2,
+      "bbox": {
+        "x": 477.34,
+        "y": 229.5,
+        "w": 209.84,
+        "h": 123.88
+      }
+    },
+    {
+      "nodeId": "panel_0003_title",
+      "parentId": "panel_0003",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 565.98,
+        "y": 237.46,
+        "w": 111.2,
+        "h": 22.0
+      },
+      "text": "学力分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0003_content",
+      "parentId": "panel_0003",
+      "type": "Chart",
+      "componentId": "BarLine",
+      "level": 4,
+      "bbox": {
+        "x": 493.0,
+        "y": 275.0,
+        "w": 182.0,
+        "h": 67.0
+      }
+    },
+    {
+      "nodeId": "panel_0004",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border04",
+      "level": 2,
+      "bbox": {
+        "x": 32.9,
+        "y": 81.86,
+        "w": 211.2,
+        "h": 124.86
+      }
+    },
+    {
+      "nodeId": "panel_0004_title",
+      "parentId": "panel_0004",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 84.49,
+        "y": 92.56,
+        "w": 108.0,
+        "h": 22.0
+      },
+      "text": "服务分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0004_content",
+      "parentId": "panel_0004",
+      "type": "Chart",
+      "componentId": "VChartBarStack",
+      "level": 4,
+      "bbox": {
+        "x": 49.0,
+        "y": 128.0,
+        "w": 181.0,
+        "h": 66.0
+      }
+    },
+    {
+      "nodeId": "panel_0004_overlay",
+      "parentId": "panel_0004",
+      "type": "Filter",
+      "componentId": "InputsTab",
+      "level": 4,
+      "bbox": {
+        "x": 123.0,
+        "y": 151.0,
+        "w": 23.0,
+        "h": 17.0
+      }
+    },
+    {
+      "nodeId": "panel_0005",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 265.5,
+        "y": 226.52,
+        "w": 215.14,
+        "h": 124.03
+      }
+    },
+    {
+      "nodeId": "panel_0005_title",
+      "parentId": "panel_0005",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 319.07,
+        "y": 233.8,
+        "w": 108.0,
+        "h": 24.55
+      },
+      "text": "任务状态",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0005_content",
+      "parentId": "panel_0005",
+      "type": "Border",
+      "componentId": "Border01",
+      "level": 2,
+      "bbox": {
+        "x": 279.0,
+        "y": 273.0,
+        "w": 190.0,
+        "h": 62.0
+      }
+    },
+    {
+      "nodeId": "panel_0005_overlay",
+      "parentId": "panel_0005",
+      "type": "Chart",
+      "componentId": "Radar",
+      "level": 4,
+      "bbox": {
+        "x": 315.0,
+        "y": 290.0,
+        "w": 108.0,
+        "h": 21.0
+      }
+    },
+    {
+      "nodeId": "panel_0006",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 35.08,
+        "y": 237.92,
+        "w": 206.26,
+        "h": 135.62
+      }
+    },
+    {
+      "nodeId": "panel_0006_title",
+      "parentId": "panel_0006",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 59.0,
+        "y": 248.64,
+        "w": 158.44,
+        "h": 22.0
+      },
+      "text": "用户调用量排行Top5",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0006_content",
+      "parentId": "panel_0006",
+      "type": "Chart",
+      "componentId": "PieCircle",
+      "level": 4,
+      "bbox": {
+        "x": 46.0,
+        "y": 283.0,
+        "w": 180.0,
+        "h": 74.0
+      }
+    },
+    {
+      "nodeId": "panel_0007",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 13.28,
+        "y": 385.06,
+        "w": 205.31,
+        "h": 133.23
+      }
+    },
+    {
+      "nodeId": "panel_0007_title",
+      "parentId": "panel_0007",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 23.28,
+        "y": 392.94,
+        "w": 144.32,
+        "h": 23.6
+      },
+      "text": "调用分布指数",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0007_content",
+      "parentId": "panel_0007",
+      "type": "Decorate",
+      "componentId": "PipelineH",
+      "level": 3,
+      "bbox": {
+        "x": 70.0,
+        "y": 437.0,
+        "w": 91.0,
+        "h": 65.0
+      }
+    },
+    {
+      "nodeId": "panel_0007_decorate",
+      "parentId": "panel_0007",
+      "type": "Decorate",
+      "componentId": null,
+      "level": 3,
+      "bbox": {
+        "x": 140.9,
+        "y": 395.06,
+        "w": 65.69,
+        "h": 20.96
+      }
+    },
+    {
+      "nodeId": "panel_0008",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border01",
+      "level": 2,
+      "bbox": {
+        "x": 492.34,
+        "y": 74.15,
+        "w": 200.85,
+        "h": 137.66
+      }
+    },
+    {
+      "nodeId": "panel_0008_title",
+      "parentId": "panel_0008",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 502.34,
+        "y": 82.45,
+        "w": 108.0,
+        "h": 23.16
+      },
+      "text": "调用分布指数",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0008_content",
+      "parentId": "panel_0008",
+      "type": "Decorate",
+      "componentId": "Decorates04",
+      "level": 3,
+      "bbox": {
+        "x": 544.0,
+        "y": 125.0,
+        "w": 101.0,
+        "h": 72.0
+      }
+    },
+    {
+      "nodeId": "panel_0009",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 721.69,
+        "y": 231.53,
+        "w": 205.98,
+        "h": 134.17
+      }
+    },
+    {
+      "nodeId": "panel_0009_title",
+      "parentId": "panel_0009",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 747.04,
+        "y": 239.41,
+        "w": 108.0,
+        "h": 26.64
+      },
+      "text": "责任单位",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0009_content",
+      "parentId": "panel_0009",
+      "type": "Border",
+      "componentId": "Border08",
+      "level": 2,
+      "bbox": {
+        "x": 734.0,
+        "y": 281.0,
+        "w": 181.0,
+        "h": 71.0
+      }
+    },
+    {
+      "nodeId": "panel_0010",
+      "parentId": "screen_0000",
+      "type": "Panel",
+      "componentId": null,
+      "level": 2,
+      "bbox": {
+        "x": 266.6,
+        "y": 81.45,
+        "w": 200.72,
+        "h": 124.75
+      }
+    },
+    {
+      "nodeId": "panel_0010_title",
+      "parentId": "panel_0010",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 298.21,
+        "y": 89.34,
+        "w": 137.49,
+        "h": 22.0
+      },
+      "text": "任务状态",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0010_content",
+      "parentId": "panel_0010",
+      "type": "Chart",
+      "componentId": "Pie3DTwoCyan",
+      "level": 4,
+      "bbox": {
+        "x": 277.0,
+        "y": 133.0,
+        "w": 179.0,
+        "h": 59.0
+      }
+    },
+    {
+      "nodeId": "panel_0010_overlay",
+      "parentId": "panel_0010",
+      "type": "Filter",
+      "componentId": "InputsSelect",
+      "level": 4,
+      "bbox": {
+        "x": 352.0,
+        "y": 151.0,
+        "w": 21.0,
+        "h": 15.0
+      }
+    },
+    {
+      "nodeId": "panel_0011",
+      "parentId": "screen_0000",
+      "type": "Border",
+      "componentId": "Border09",
+      "level": 2,
+      "bbox": {
+        "x": 491.45,
+        "y": 385.01,
+        "w": 217.12,
+        "h": 123.39
+      }
+    },
+    {
+      "nodeId": "panel_0011_title",
+      "parentId": "panel_0011",
+      "type": "Title",
+      "componentId": "title1",
+      "level": 3,
+      "bbox": {
+        "x": 520.56,
+        "y": 392.46,
+        "w": 129.49,
+        "h": 22.0
+      },
+      "text": "攻击分布",
+      "role": "panelTitle"
+    },
+    {
+      "nodeId": "panel_0011_content",
+      "parentId": "panel_0011",
+      "type": "Chart",
+      "componentId": "FlowChartLine",
+      "level": 4,
+      "bbox": {
+        "x": 503.0,
+        "y": 432.0,
+        "w": 192.0,
+        "h": 61.0
+      }
+    }
+  ]
+}

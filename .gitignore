@@ -19,16 +19,14 @@ config.json
 *.pem
 *.key
 
-# Generated datasets, reports, and training outputs
+# Generated reports and training outputs
 artifacts/
 logs/
 runs/
-data/
 
 # Model checkpoints and downloaded weights
 models/*.pt
 *.pt
 
 # Keep placeholders if they are added later
-!data/.gitkeep
 !models/.gitkeep
