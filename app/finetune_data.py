@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import zipfile
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
@@ -92,8 +93,12 @@ def export_qwen_vl_dataset(
         for record in records:
             fp.write(json.dumps(to_qwen_message(record), ensure_ascii=False) + "\n")
 
+    package_path = output_path.parent / "qwen_vl_component_recognition.zip"
+    package_qwen_vl_dataset(output_path, records, package_path)
+
     manifest = {
         "output": str(output_path),
+        "package": str(package_path),
         "recordCount": len(records),
         "referenceVariants": reference_variants,
         "includeCorrections": include_corrections,
@@ -175,18 +180,34 @@ def to_qwen_message(record: Dict[str, Any]) -> Dict[str, Any]:
     }
     ocr_text = str(record.get("ocrText") or "")
     prompt = PROMPT + (f"OCR文本：{ocr_text}" if ocr_text else "")
+    image_name = Path(str(record.get("image") or "")).name
     return {
         "messages": [
             {
                 "role": "user",
                 "content": [
-                    {"type": "image", "image": str(record.get("image"))},
-                    {"type": "text", "text": prompt},
+                    {"text": prompt},
+                    {"image": image_name, "resized_width": 640, "resized_height": 420},
                 ],
             },
-            {"role": "assistant", "content": json.dumps(answer, ensure_ascii=False)},
+            {"role": "assistant", "content": [{"text": json.dumps(answer, ensure_ascii=False)}]},
         ]
     }
+
+
+def package_qwen_vl_dataset(data_path: Path, records: List[Dict[str, Any]], package_path: Path) -> None:
+    with zipfile.ZipFile(package_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.write(data_path, "data.jsonl")
+        used_names = {"data.jsonl"}
+        for record in records:
+            image_path = Path(str(record.get("image") or ""))
+            if not image_path.exists():
+                continue
+            image_name = image_path.name
+            if image_name in used_names:
+                continue
+            used_names.add(image_name)
+            archive.write(image_path, image_name)
 
 
 def generate_image_variants(image: Image.Image, count: int) -> Iterable[Image.Image]:

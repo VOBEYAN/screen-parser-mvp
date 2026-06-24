@@ -16,7 +16,7 @@ https://github.com/VOBEYAN/ai-schema-view
 - 支持 OpenAI-compatible 视觉大模型接口，例如 DashScope Qwen VL。
 - 内置 `data/component-reference` 组件参考库，用于把识别结果匹配到 `ai-schema-view` 的组件 ID。
 - 输出 `aiSchemaComponents`，可直接被 `ai-schema-view` 的 `/schema-render` 页面读取并运行时渲染。
-- 提供纠错样本保存和 Qwen VL 微调 JSONL 数据导出接口。
+- 提供纠错样本保存和 Qwen VL 微调数据导出接口，自动生成 `data.jsonl` 和训练 zip 包。
 
 ## 快速启动
 
@@ -134,21 +134,28 @@ POST /api/labels
 POST /api/finetune/export
 ```
 
-纠错样本会保存在 `artifacts/` 下，导出的 Qwen VL 微调 JSONL 默认在：
+纠错样本会保存在 `artifacts/` 下，导出的 Qwen VL 微调数据默认在：
 
 ```text
-data/finetune/qwen_vl_component_recognition.jsonl
+data/finetune/qwen_vl_component_recognition/data.jsonl
+data/finetune/qwen_vl_component_recognition/qwen_vl_component_recognition.zip
 ```
 
 导出命令：
 
 ```bash
 python scripts/export_qwen_vl_finetune_dataset.py \
-  --output data/finetune/qwen_vl_component_recognition.jsonl \
-  --reference-variants 8
+  --output data/finetune/qwen_vl_component_recognition/data.jsonl \
+  --reference-variants 20
 ```
 
-`data/finetune/` 是生成产物，默认不提交。微调完成后，把后端环境变量里的模型 ID 换成你的微调模型即可。
+上传到百炼/Qwen VL 微调任务时，使用生成的：
+
+```text
+data/finetune/qwen_vl_component_recognition/qwen_vl_component_recognition.zip
+```
+
+zip 根目录里包含 `data.jsonl` 和对应图片文件。`data/finetune/` 是生成产物，默认不提交。微调完成后，把后端环境变量里的模型 ID 换成你的微调模型即可。
 
 ## 训练数据与模型
 
