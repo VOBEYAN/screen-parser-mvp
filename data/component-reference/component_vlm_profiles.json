@@ -1,0 +1,3815 @@
+{
+  "generatedAt": "2026-06-19T11:14:51",
+  "catalogPath": "/Users/wbl/Desktop/数据可视化对接/ai-schema-view/schema-md/catalog.md",
+  "referencePath": "/Users/wbl/Desktop/数据可视化对接/screen-parser-mvp/data/component-reference",
+  "mode": "vlm",
+  "componentCount": 95,
+  "components": [
+    {
+      "componentId": "AIRobot",
+      "title": "数科机器人",
+      "category": "Biz",
+      "contentType": "panel",
+      "visualForm": "centered_circular_hierarchy",
+      "layout": "centered",
+      "semanticKeywords": [
+        "数科机器人",
+        "智能中台",
+        "智能底座",
+        "智能平台",
+        "产品库",
+        "报表中心",
+        "业务专题",
+        "数据入口",
+        "深色背景",
+        "蓝青主色",
+        "分区布局",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "顶部具象化机器人形象作为视觉焦点",
+        "三层环形层级结构（平台→中台→底座）",
+        "中心对称式布局，强调层级与汇聚关系",
+        "图标+标签组合的模块化单元（如‘产品库’‘报表中心’）",
+        "科技感发光环与悬浮立体元素营造空间纵深"
+      ],
+      "negativeMatches": [
+        "simple_table",
+        "line_chart",
+        "bar_chart",
+        "pie_chart",
+        "map",
+        "metric_card",
+        "filter",
+        "wordcloud",
+        "funnel_chart",
+        "border"
+      ]
+    },
+    {
+      "componentId": "AIShield",
+      "title": "AI盾牌",
+      "category": "Biz",
+      "contentType": "panel",
+      "visualForm": "shield_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "AI盾牌",
+        "风险预警",
+        "业务专题",
+        "深色背景",
+        "蓝主色",
+        "科技感",
+        "中心聚焦",
+        "分区布局",
+        "中对比",
+        "数据入口",
+        "dataset",
+        "visual"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "中心大型盾牌图标作为视觉焦点",
+        "环绕式环形布局的多个数据入口节点",
+        "统一使用‘风险预警’标签与‘32条’数值组合",
+        "悬浮光效与层级平台结构增强立体感",
+        "整体为单体主题面板，非多组件拼接"
+      ],
+      "negativeMatches": [
+        "grid",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table",
+        "map",
+        "metric_card",
+        "filter",
+        "decorate",
+        "border"
+      ]
+    },
+    {
+      "componentId": "AlarmList",
+      "title": "告警等级列表",
+      "category": "Tables",
+      "contentType": "table",
+      "visualForm": "table_grid",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "告警等级",
+        "风险分级",
+        "表格列表",
+        "深色背景",
+        "蓝主色",
+        "高对比",
+        "横向延展",
+        "元素密集",
+        "中心聚焦",
+        "levelField",
+        "dataset",
+        "selectedRow"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色标题栏的高对比配色方案",
+        "以'等级'为第一列、带红色/橙色/蓝色标签的告警级别可视化",
+        "行内嵌套彩色标签（高危/中危/低危）而非纯文本",
+        "强调选中行（蓝色边框高亮）的交互状态",
+        "数据驱动的层级化展示（levelField决定标签颜色与排序）"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "map",
+        "filter",
+        "wordcloud",
+        "funnel_chart",
+        "scatter_chart",
+        "area_chart",
+        "decorate",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "AlarmStatus",
+      "title": "告警状态",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "radial_gauge_with_alert_icon",
+      "layout": "centered",
+      "semanticKeywords": [
+        "告警",
+        "状态",
+        "风险等级",
+        "高危",
+        "中危",
+        "低危",
+        "预警",
+        "中心聚焦",
+        "深色背景",
+        "红主色",
+        "横向延展",
+        "信息密集"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "中心突出的红色警告三角形图标",
+        "环形渐变进度盘+数字计数器组合",
+        "多层级风险标签（高危/中危/低危）环绕分布",
+        "深色背景与高对比度红橙蓝配色",
+        "数据以百分比+数值双维度呈现于视觉焦点区域"
+      ],
+      "negativeMatches": [
+        "pure_table",
+        "line_chart",
+        "bar_chart",
+        "pie_chart",
+        "wordcloud",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "BarCommon",
+      "title": "柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "vertical_bar_stacked",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "柱状图",
+        "纵向",
+        "堆叠",
+        "深色背景",
+        "蓝绿配色",
+        "对比结构",
+        "tooltip",
+        "xAxis",
+        "yAxis",
+        "dataset",
+        "数据可视化",
+        "中对比度"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纵向排列的柱形，支持多组数据堆叠（如蓝/绿双色）",
+        "深色背景 + 高对比度元素",
+        "明确的X轴分类标签（Mon/Sun）与Y轴数值刻度",
+        "顶部辅助条形图（legend-like）用于图例示意",
+        "中心聚焦式布局，图表主体居中"
+      ],
+      "negativeMatches": [
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "BarCrossrange",
+      "title": "横向柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "horizontal_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "横向柱状图",
+        "水平条形图",
+        "crossrange bar",
+        "深色背景",
+        "蓝绿双色对比",
+        "左侧标签轴",
+        "数据对比",
+        "tooltip交互",
+        "xAxis数值轴",
+        "yAxis分类轴",
+        "dataset数据源",
+        "简洁现代"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "严格横向延展的条形（x轴为数值，y轴为分类）",
+        "左侧垂直排列的分类标签（星期）",
+        "双色并列条形（蓝/绿）体现多维对比",
+        "深色背景 + 高对比度色彩（蓝、绿）",
+        "顶部辅助小图例（带颜色标识的条形块）",
+        "无标题/无网格线但有水平参考线"
+      ],
+      "negativeMatches": [
+        "vertical_bar",
+        "donut_pie",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "BarLine",
+      "title": "柱状图 & 折线图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "vertical_bar_line_overlay",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "柱状图",
+        "折线图",
+        "堆叠",
+        "蓝黄配色",
+        "深色背景",
+        "数据对比",
+        "tooltip",
+        "legend",
+        "xAxis",
+        "yAxis",
+        "dataset",
+        "纵向布局"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "柱状图与折线图叠加呈现",
+        "蓝色柱体+黄色折线双系列",
+        "柱体高度与折线点值均标注数值",
+        "深色背景+中对比度",
+        "主轴为月份（xAxis），数值轴为0-150",
+        "折线连接各月数据点，柱体对应同一月份"
+      ],
+      "negativeMatches": [
+        "纯柱状图",
+        "纯折线图",
+        "饼图",
+        "面积图",
+        "散点图",
+        "漏斗图",
+        "词云",
+        "表格",
+        "地图"
+      ]
+    },
+    {
+      "componentId": "Border01",
+      "title": "边框-01",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "边框",
+        "框架",
+        "围栏",
+        "科技感",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "均衡分区",
+        "元素简洁",
+        "结构包裹",
+        "视觉引导"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "仅由四角与横梁构成的开放矩形框架，无填充内容区域；左右对称但非闭合，形成‘C’形缺口；亮蓝色发光线条在深灰背景上呈现轻微渐变与光晕效果；顶部左上角含三个小圆点（可能为操作指示器）；强调空间分隔而非数据承载"
+      ],
+      "negativeMatches": [
+        "panel",
+        "decorate",
+        "chart",
+        "metric_card",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "Border02",
+      "title": "边框-02",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "边框-02",
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "信息中密",
+        "低对比",
+        "中心聚焦",
+        "结构包裹",
+        "渐变轮廓",
+        "科技感",
+        "轻量装饰",
+        "非数据承载"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "非矩形不规则多边形轮廓",
+        "双色渐变描边（青蓝过渡）",
+        "内部留白区域用于内容嵌入",
+        "顶部虚线提示延伸/可扩展性",
+        "无填充、仅轮廓线的极简框架",
+        "视觉重心居中偏上，强调包围而非填充"
+      ],
+      "negativeMatches": [
+        "table_grid",
+        "panel",
+        "decorate",
+        "metric_card",
+        "chart",
+        "filter"
+      ]
+    },
+    {
+      "componentId": "Border03",
+      "title": "边框-03",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "边框",
+        "霓虹",
+        "发光",
+        "蓝光",
+        "深色背景",
+        "聚焦",
+        "均衡分区",
+        "低对比",
+        "结构包裹",
+        "主配置",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "四角圆润的发光边框，主色调为蓝紫渐变，边缘有亮青色高光；深色背景衬托下呈现科技感与轻量聚焦效果；仅作视觉围合，无填充内容区；强调边界而非内部信息承载"
+      ],
+      "negativeMatches": [
+        "solid_border",
+        "shadow_box",
+        "card_shadow",
+        "grid_line",
+        "divider_horizontal",
+        "panel_header",
+        "table_borders"
+      ]
+    },
+    {
+      "componentId": "Border04",
+      "title": "边框-04",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "中心聚焦",
+        "低对比",
+        "科技感",
+        "边框包裹",
+        "标题栏",
+        "信息中密",
+        "科幻风格",
+        "UI框架",
+        "模块容器"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "顶部中央蓝色标题栏（带宽度/高度/字体大小配置）",
+        "左右侧边垂直细条装饰",
+        "四角圆润但整体为矩形框架",
+        "深灰/黑色背景衬托亮蓝边框",
+        "无填充内容区，仅作结构围合"
+      ],
+      "negativeMatches": [
+        "vertical_border",
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "panel_with_content",
+        "borderless_container"
+      ]
+    },
+    {
+      "componentId": "Border05",
+      "title": "边框-05",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "边框",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "分区布局",
+        "简洁元素",
+        "装饰性边框",
+        "结构包裹",
+        "colors配置",
+        "backgroundColor",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景上突出的蓝色发光边框",
+        "四角有轻微内收/圆角处理的矩形框架",
+        "边框为独立视觉容器，非内容填充",
+        "无内部内容区纹理或渐变，强调边界本身",
+        "顶部左上角含三个小圆点（可能为标题栏控件）"
+      ],
+      "negativeMatches": [
+        "panel",
+        "decorate",
+        "chart",
+        "metric_card",
+        "table",
+        "map",
+        "filter"
+      ]
+    },
+    {
+      "componentId": "Border06",
+      "title": "边框-06",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝青主色",
+        "边框包裹",
+        "低对比度",
+        "左侧聚焦",
+        "分区布局",
+        "元素简洁",
+        "科技感",
+        "渐变光效",
+        "矩形框架",
+        "视觉焦点",
+        "轻量装饰"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "四角带柔和蓝青渐变光晕的矩形边框",
+        "深灰/黑色背景衬托，非纯黑",
+        "边框内侧留白区域用于内容承载",
+        "左上角有三个小圆点（窗口控制按钮）暗示容器上下文",
+        "边框本身为唯一视觉主体，无内部数据或图表"
+      ],
+      "negativeMatches": [
+        "table_grid",
+        "chart",
+        "metric_card",
+        "panel",
+        "decorate"
+      ]
+    },
+    {
+      "componentId": "Border07",
+      "title": "边框-07",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "均衡分区",
+        "元素简洁",
+        "低对比",
+        "中心聚焦",
+        "科技感",
+        "边框包裹",
+        "结构框架",
+        "数据入口",
+        "视觉引导",
+        "轻量边框"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "非实线、断续式蓝色发光边框，呈现科技感与动态感",
+        "边框四角有轻微延伸/错位设计，增强空间层次",
+        "内部留白充足，强调中心区域内容承载能力",
+        "边框厚度不均，局部加粗（如右下角），形成视觉锚点",
+        "整体为纯装饰性边框，无填充或交互元素"
+      ],
+      "negativeMatches": [
+        "solid_border",
+        "rounded_border",
+        "shadow_box",
+        "card_shadow",
+        "grid_line",
+        "table_border",
+        "metric_card_frame",
+        "panel_header"
+      ]
+    },
+    {
+      "componentId": "Border08",
+      "title": "边框-08",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "结构化框架",
+        "科技感",
+        "简约现代",
+        "视觉引导",
+        "轻量装饰"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深蓝底色+渐变蓝边框的低对比设计",
+        "仅单层细线边框，无填充/阴影/图标",
+        "左上角三圆点控件暗示窗口/面板属性",
+        "内部留白区域适配内容容器，非数据展示区",
+        "边框呈矩形但顶部有轻微高亮条（暗示交互或状态）"
+      ],
+      "negativeMatches": [
+        "panel",
+        "decorate",
+        "chart",
+        "metric_card",
+        "filter",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "Border09",
+      "title": "边框-09",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "结构化框架",
+        "科技感",
+        "轻量级装饰",
+        "数据入口",
+        "配置驱动"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深灰/黑色底纹背景 + 蓝色发光边框的低对比设计",
+        "仅单层矩形边框，无填充、无内角圆弧或阴影",
+        "左上角三颗蓝色小圆点（可能为窗口控制）暗示桌面/面板场景",
+        "边框在视觉上形成独立内容容器，强调“区域隔离”而非装饰性分隔",
+        "边框颜色与主色调一致，体现统一配色体系"
+      ],
+      "negativeMatches": [
+        "table_grid",
+        "liquid_vertical_bar",
+        "donut_pie",
+        "panel_with_header",
+        "border_with_shadow",
+        "rounded_border",
+        "multi-layer_border",
+        "colorful_decoration"
+      ]
+    },
+    {
+      "componentId": "Border10",
+      "title": "边框-10",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "freeform",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "科技感",
+        "未来感",
+        "轻量框架",
+        "视觉引导",
+        "结构边界"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "非对称L形左下角开口边框",
+        "蓝色渐变光效线条",
+        "深灰/黑色背景高对比衬托",
+        "顶部左侧三圆点状态指示器",
+        "无填充、仅轮廓线的轻量框架形态",
+        "强调左侧区域聚焦的不对称构图"
+      ],
+      "negativeMatches": [
+        "full_rect_border",
+        "rounded_frame",
+        "double_line_border",
+        "solid_color_border",
+        "table_grid",
+        "panel_with_header"
+      ]
+    },
+    {
+      "componentId": "Border11",
+      "title": "边框-11",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "结构框架",
+        "数据入口",
+        "配置边界",
+        "科技感",
+        "悬浮光效"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "双层透明蓝色边框叠加，带轻微立体投影效果",
+        "深灰/黑色背景衬托，高对比度边框突出",
+        "左上角三圆点控制按钮（窗口标题栏风格）",
+        "内部留白区域适配内容容器，非填充式设计",
+        "边框线条粗细均匀，无装饰性图案或图标"
+      ],
+      "negativeMatches": [
+        "simple_line_border",
+        "rounded_frame",
+        "shadow_box",
+        "card_shadow",
+        "grid_border",
+        "tab_border",
+        "modal_border"
+      ]
+    },
+    {
+      "componentId": "Border12",
+      "title": "边框-12",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "freeform",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "科技感",
+        "未来感",
+        "模块化",
+        "轻量框架"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "右下角斜切角设计",
+        "顶部与底部粗蓝条强调",
+        "左上角三圆点状态指示器",
+        "非对称边框结构（右侧/底部有延伸）",
+        "深灰黑底+亮蓝线的低对比配色方案"
+      ],
+      "negativeMatches": [
+        "standard_rectangular_border",
+        "rounded_frame",
+        "double_line_border",
+        "shadowed_panel",
+        "gradient_edge_border"
+      ]
+    },
+    {
+      "componentId": "Border13",
+      "title": "边框-13",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "边框包裹",
+        "结构化边界",
+        "轻量装饰",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深蓝底色+亮蓝细边框的低对比配色",
+        "单层矩形边框，无填充，仅作区域划分",
+        "左上角三圆点控件暗示窗口/面板容器",
+        "边框内留白充足，强调内容区而非边框本身",
+        "非动态/非交互式装饰性边框，不承载数据"
+      ],
+      "negativeMatches": [
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "panel",
+        "decorate"
+      ]
+    },
+    {
+      "componentId": "Border14",
+      "title": "边框-14",
+      "category": "Borders",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "边框",
+        "安全告警",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "左侧聚焦",
+        "低对比",
+        "标题栏",
+        "装饰性边框",
+        "结构包裹",
+        "borderTitle",
+        "borderColor"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "顶部横向标题栏+左侧图标+蓝色渐变背景的组合式边框设计",
+        "深色（近黑）主背景与亮蓝边框/标题形成低对比度视觉层次",
+        "仅顶部区域含内容（标题），主体区域留白，强调信息聚焦于左上角",
+        "明确支持borderTitle、borderColor等配置项，适配告警/提示类语义场景"
+      ],
+      "negativeMatches": [
+        "full_screen_panel",
+        "card_grid",
+        "metric_card",
+        "table_grid",
+        "liquid_vertical_bar",
+        "donut_pie"
+      ]
+    },
+    {
+      "componentId": "CapsuleChart",
+      "title": "胶囊柱图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "horizontal_capsule_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "胶囊柱图",
+        "横向条形",
+        "低对比度",
+        "深色背景",
+        "蓝主色",
+        "简洁元素",
+        "左侧聚焦",
+        "数据对比",
+        "进度条式",
+        "渐变填充",
+        "数值标签",
+        "轴线对齐"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "横向延展的胶囊状填充条（非矩形），边缘圆润",
+        "深色背景 + 低对比度视觉风格，强调柔和渐变",
+        "左侧为类别标签（城市名），右侧为数值标签，条形从左向右延伸",
+        "无传统坐标轴线，仅底部数字刻度辅助定位",
+        "支持多色配置（如黄、绿、紫、青、蓝）且颜色与数值区间对应"
+      ],
+      "negativeMatches": [
+        "liquid_vertical_bar",
+        "horizontal_bar",
+        "progress_bar",
+        "gauge_chart",
+        "line_chart",
+        "area_chart"
+      ]
+    },
+    {
+      "componentId": "ChinaMap",
+      "title": "中国地图-自定义",
+      "category": "Biz",
+      "contentType": "map",
+      "visualForm": "map_china_region",
+      "layout": "freeform",
+      "semanticKeywords": [
+        "中国地图",
+        "区域分布",
+        "地理可视化",
+        "业务专题",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "中对比度",
+        "右侧聚焦",
+        "dataset配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "专用于中国省级行政区划的地理映射",
+        "深蓝底色+高亮区域（如陕西）+红色焦点标记",
+        "标注省份名称与层级关系",
+        "支持数据驱动的区域填充色变化",
+        "右侧无额外面板，聚焦地图本身"
+      ],
+      "negativeMatches": [
+        "world_map",
+        "city_level_map",
+        "choropleth_heatmap",
+        "geographic_point_plot",
+        "custom_polygon_map"
+      ]
+    },
+    {
+      "componentId": "CirclePoint",
+      "title": "圆点光环",
+      "category": "Mores",
+      "contentType": "decorate",
+      "visualForm": "outCircle_inCircle",
+      "layout": "centered",
+      "semanticKeywords": [
+        "圆点光环",
+        "环形光效",
+        "聚焦中心",
+        "低对比度",
+        "深色背景",
+        "蓝主色",
+        "视觉焦点",
+        "信息层级",
+        "主配置",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "双层同心圆结构（outCircle + inCircle）",
+        "中央高亮白点+蓝环渐变光晕",
+        "左侧三小蓝点作为辅助指示器",
+        "整体极简、非数据驱动的装饰性布局",
+        "无文字/标签/轴线，纯视觉符号"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "chart",
+        "panel",
+        "border",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "Clock",
+      "title": "时钟",
+      "category": "Mores",
+      "contentType": "decorate",
+      "visualForm": "circular_analog_clock",
+      "layout": "centered",
+      "semanticKeywords": [
+        "时钟",
+        "时间",
+        "模拟表盘",
+        "蓝白配色",
+        "深色背景",
+        "简约",
+        "中心聚焦",
+        "时间显示",
+        "仪表盘",
+        "装饰性组件",
+        "主配置",
+        "border"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "圆形模拟时钟表盘结构",
+        "白色边框与浅蓝表盘形成中对比",
+        "指针式时间指示（时/分/秒）",
+        "中心点为绿色小圆，增强视觉焦点",
+        "无数字刻度，仅用短线标记小时位置",
+        "深色背景衬托主体，符合'深色背景+蓝主色'描述"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table_grid",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "clor",
+      "title": "3D渐变圆柱柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "3d_cylinder_bar",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "3D柱状图",
+        "圆柱体",
+        "渐变色",
+        "立体图表",
+        "echarts",
+        "指标展示",
+        "数据可视化",
+        "柱状图",
+        "垂直柱",
+        "多色区分"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "三维圆柱形柱体造型",
+        "每根柱体底部有环形光效",
+        "柱体内部支持垂直渐变填充",
+        "顶部显示数值标签",
+        "底部标注指标名称",
+        "支持多组独立指标并列展示"
+      ],
+      "negativeMatches": [
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "border_frame",
+        "line_chart",
+        "area_chart",
+        "pie_chart"
+      ]
+    },
+    {
+      "componentId": "ColorPrismBar",
+      "title": "ColorPrismBar",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "isometric_prism_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "彩色棱柱图",
+        "3D柱状图",
+        "等高柱",
+        "立体柱",
+        "isometric bar",
+        "color gradient bar",
+        "指标可视化",
+        "数据对比",
+        "echarts渲染",
+        "柱状图",
+        "垂直柱",
+        "多色柱"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "等轴测（isometric）三维立体柱体造型",
+        "每根柱体具有独立渐变色彩（蓝、紫、橙、绿）",
+        "柱体底部带阴影基座，增强立体感",
+        "顶部数值标签 + 底部分类标签（如“指标1”）双层标注",
+        "深色背景衬托高对比度彩色柱体"
+      ],
+      "negativeMatches": [
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "border_frame",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud"
+      ]
+    },
+    {
+      "componentId": "CountDown",
+      "title": "倒计时",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "flip_counter",
+      "layout": "centered",
+      "semanticKeywords": [
+        "倒计时",
+        "计时器",
+        "时间剩余",
+        "秒表",
+        "数字翻牌",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "低对比",
+        "中心聚焦",
+        "预览"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "独立翻牌式数字显示结构（00时 08分 43秒）",
+        "中文单位标签（时/分/秒）嵌入在数字块之间",
+        "无图表/表格等数据可视化元素，纯时间数值展示",
+        "深色背景+蓝色发光数字，强调科技感与沉浸式聚焦",
+        "非交互式静态预览形态，不包含操作按钮或配置控件"
+      ],
+      "negativeMatches": [
+        "timer",
+        "progress_bar",
+        "gauge",
+        "dashboard",
+        "calendar",
+        "date_picker",
+        "time_series_chart",
+        "countdown_timer_with_controls"
+      ]
+    },
+    {
+      "componentId": "CylinderBar",
+      "title": "柱体柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "cylinder_vertical_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "柱体柱状图",
+        "蓝青渐变",
+        "深色背景",
+        "横向延展",
+        "中密信息",
+        "中心聚焦",
+        "柱形对比",
+        "tooltip交互",
+        "grid布局",
+        "xAxis yAxis配置",
+        "dataset数据源"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "三维柱体造型（带底座阴影）",
+        "垂直排列、非水平条形",
+        "蓝青主色渐变填充",
+        "深色基底+浅灰网格线",
+        "强调单个柱体高度对比而非面积",
+        "适配tooltip与坐标轴配置的典型条形图结构"
+      ],
+      "negativeMatches": [
+        "horizontal_bar",
+        "line_chart",
+        "area_chart",
+        "donut_pie",
+        "funnel_chart",
+        "scatter_chart",
+        "wordcloud",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "Decorates01",
+      "title": "装饰-01",
+      "category": "Decorates",
+      "contentType": "decorate",
+      "visualForm": "horizontal_line",
+      "layout": "centered",
+      "semanticKeywords": [
+        "装饰",
+        "深色背景",
+        "蓝主色",
+        "简洁元素",
+        "低对比",
+        "左侧聚焦",
+        "分区布局",
+        "图形结构",
+        "配置项",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与单条水平蓝线构成极简视觉焦点",
+        "无文字/图标，纯图形装饰性元素",
+        "强调线条的长度与位置（非动态动画）",
+        "顶部三圆点暗示窗口控制，但主体为独立装饰组件",
+        "不承载数据展示功能，仅作视觉分隔或引导"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "metric_card",
+        "panel",
+        "border",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "Decorates02",
+      "title": "装饰-02",
+      "category": "Decorates",
+      "contentType": "decorate",
+      "visualForm": "horizontal_line_segment",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "装饰",
+        "分隔线",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "左侧聚焦",
+        "图形结构",
+        "分区布局",
+        "简洁元素",
+        "配置项",
+        "colors",
+        "dur",
+        "lineHeight"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与浅蓝/灰白线条形成低对比度视觉效果",
+        "水平三段式分段线，非连续实线或纯点状",
+        "左上角三个蓝色圆点作为装饰性图标入口",
+        "无数据内容区，纯装饰性图形结构",
+        "强调配置参数（colors/dur/lineHeight）的可视化体现"
+      ],
+      "negativeMatches": [
+        "border_frame",
+        "panel",
+        "table_grid",
+        "liquid_vertical_bar",
+        "donut_pie",
+        "chart",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "Decorates03",
+      "title": "装饰-03",
+      "category": "Decorates",
+      "contentType": "decorate",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "装饰",
+        "标题分隔",
+        "左右箭头",
+        "深色背景",
+        "蓝主色",
+        "简洁元素",
+        "中心聚焦",
+        "低对比度",
+        "图形结构",
+        "装饰性边框",
+        "文本居中",
+        "轻量级"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景上以蓝色双箭头环绕标题文字的对称装饰结构",
+        "无数据可视化元素，纯装饰性布局",
+        "仅包含标题与装饰符号，无图表/面板/过滤器等交互组件",
+        "视觉焦点集中于中央标题区域，两侧对称箭头强化引导"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "Decorates04",
+      "title": "装饰-04",
+      "category": "Decorates",
+      "contentType": "decorate",
+      "visualForm": "line_segment_decoration",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "装饰",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "图形结构",
+        "colors配置",
+        "reverse配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "仅由2–3条浅蓝线条构成的极简装饰性图形",
+        "深灰/黑色背景与冷色调线条形成低对比度视觉效果",
+        "左侧对齐的线段组合，无填充或图标",
+        "无数据承载能力，纯视觉引导/分隔作用",
+        "支持主色（colors）与反色（reverse）配置"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "chart",
+        "table",
+        "panel",
+        "border",
+        "filter",
+        "map"
+      ]
+    },
+    {
+      "componentId": "Decorates05",
+      "title": "装饰-05",
+      "category": "Decorates",
+      "contentType": "decorate",
+      "visualForm": "horizontal_progress_bar",
+      "layout": "centered",
+      "semanticKeywords": [
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "元素简洁",
+        "低对比",
+        "左侧聚焦",
+        "装饰图形",
+        "进度条",
+        "轻量装饰",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝色渐变元素形成低对比度视觉效果",
+        "水平居中放置的细长进度条，含分段高亮",
+        "左上角三圆点控件暗示交互或状态指示",
+        "无文字标签/数值，纯图形化装饰结构",
+        "强调空间留白与视觉聚焦（左侧区域）"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "table",
+        "border_frame",
+        "panel"
+      ]
+    },
+    {
+      "componentId": "Decorates06",
+      "title": "装饰-06",
+      "category": "Decorates",
+      "contentType": "title",
+      "visualForm": "horizontal_bar_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "装饰",
+        "标题栏",
+        "科技感",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "图形边框",
+        "科幻风格",
+        "元素简洁",
+        "分区布局",
+        "主配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "横向拉伸的带箭头/棱角端点的条形框架结构",
+        "深蓝底色 + 浅蓝描边的双色配色方案",
+        "居中放置的纯文本标题（非数据驱动）",
+        "顶部左上角三圆点控件（窗口控制样式）",
+        "无数据图表或交互元素，纯装饰性容器"
+      ],
+      "negativeMatches": [
+        "title_simple",
+        "title_banner",
+        "panel",
+        "border",
+        "chart",
+        "metric_card",
+        "table_grid"
+      ]
+    },
+    {
+      "componentId": "Dial",
+      "title": "表盘",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "dial_gauge",
+      "layout": "centered",
+      "semanticKeywords": [
+        "表盘",
+        "仪表盘",
+        "速度表",
+        "指针",
+        "环形刻度",
+        "数值指示",
+        "深色背景",
+        "蓝主色",
+        "中心聚焦",
+        "低对比",
+        "数据可视化",
+        "KPI监控"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "环形半圆刻度盘结构",
+        "单指针动态指示数值",
+        "0–100线性量程标注",
+        "深色背景+蓝色高亮元素",
+        "无文字标签的数字刻度（仅关键值）",
+        "非网格/条形/饼图等常规图表形态"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table",
+        "map",
+        "wordcloud",
+        "funnel_chart",
+        "area_chart",
+        "scatter_chart",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "EnergyValue",
+      "title": "能量数值",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "liquid_circle",
+      "layout": "centered",
+      "semanticKeywords": [
+        "能量数值",
+        "深色背景",
+        "蓝主色",
+        "斜向动势",
+        "中心聚焦",
+        "中对比",
+        "信息密集",
+        "综合结构",
+        "dataset",
+        "from",
+        "dur",
+        "precision",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深蓝色渐变圆形主视觉容器",
+        "数字居中高亮显示（如1818）",
+        "外围环形/液态流动装饰元素",
+        "底部带标签的辅助文本框（如本月告警）",
+        "整体呈现科技感与动态能量感"
+      ],
+      "negativeMatches": [
+        "simple_metric",
+        "text_only",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table_grid",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "FlipperNumber",
+      "title": "数字翻牌-需动态触发",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "flipper_digit",
+      "layout": "centered",
+      "semanticKeywords": [
+        "数字翻牌",
+        "动态触发",
+        "计数器",
+        "进度显示",
+        "蓝主色",
+        "深色背景",
+        "低对比",
+        "分区布局",
+        "中心聚焦",
+        "数值展示",
+        "翻页效果",
+        "可配置长度"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "由多个独立翻牌块横向排列组成，每块显示单个数字；支持动态更新（如动画翻转）；视觉上类似老式机械计数器；强调数字变化过程而非静态值；可配置翻牌数量与颜色；无额外图表或交互控件"
+      ],
+      "negativeMatches": [
+        "number_display",
+        "counter",
+        "progress_bar",
+        "gauge",
+        "table",
+        "chart",
+        "metric_card_with_icon",
+        "text_label"
+      ]
+    },
+    {
+      "componentId": "FlowChartLine",
+      "title": "流程线",
+      "category": "FlowChart",
+      "contentType": "flow_chart",
+      "visualForm": "flow_line_structure",
+      "layout": "centered",
+      "semanticKeywords": [
+        "流程线",
+        "连线",
+        "分支结构",
+        "节点连接",
+        "流程图",
+        "主配置",
+        "endWidth",
+        "lineWidth",
+        "lineNum",
+        "lineNumUp",
+        "数据入口",
+        "深色背景",
+        "蓝主色"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝主色的低对比度配色",
+        "中心聚焦的树状/分支式连线结构",
+        "水平与垂直线段组合形成的流程路径",
+        "蓝色节点块嵌入在灰线段中表示关键点或端点",
+        "支持endWidth、lineWidth等主配置参数",
+        "非纯装饰性，具明确流程逻辑指向"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "table_grid",
+        "border_frame",
+        "liquid_vertical_bar",
+        "donut_pie"
+      ]
+    },
+    {
+      "componentId": "FullScreen",
+      "title": "全屏按钮",
+      "category": "Mores",
+      "contentType": "border",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "全屏",
+        "扩展",
+        "最大化",
+        "箭头",
+        "四向",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "聚焦",
+        "按钮",
+        "UI控件",
+        "交互"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "四向箭头组合构成的对称图标",
+        "深灰/黑色背景与浅蓝/淡紫色高亮对比",
+        "无文字标签，纯图形化操作入口",
+        "居中布局，强调中心焦点",
+        "典型用于切换视图模式的控制组件"
+      ],
+      "negativeMatches": [
+        "title",
+        "table",
+        "map",
+        "metric_card",
+        "filter",
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "chart",
+        "decorate",
+        "panel"
+      ]
+    },
+    {
+      "componentId": "Funnel",
+      "title": "漏斗图",
+      "category": "Mores",
+      "contentType": "funnel_chart",
+      "visualForm": "funnel",
+      "layout": "centered",
+      "semanticKeywords": [
+        "漏斗图",
+        "funnel chart",
+        "转化漏斗",
+        "层级结构",
+        "数据分层",
+        "横向延展",
+        "深色背景",
+        "蓝主色",
+        "中对比",
+        "中心聚焦",
+        "data5",
+        "data4",
+        "data3",
+        "data2",
+        "data1"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "典型的上下收窄梯形/三角形分层结构，自上而下宽度递减；",
+        "每层独立颜色+标签文本（如data1~data5），具明确顺序性；",
+        "深色背景与高对比度彩色层级形成视觉焦点；",
+        "顶部含横向进度条/指示器元素，增强流程感；",
+        "非纯图表容器，包含标题/控制点等UI占位符（三圆点）"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "wordcloud",
+        "table",
+        "metric_card",
+        "map",
+        "chart"
+      ]
+    },
+    {
+      "componentId": "Graph",
+      "title": "关系图",
+      "category": "Mores",
+      "contentType": "chart",
+      "visualForm": "network_graph",
+      "layout": "centered",
+      "semanticKeywords": [
+        "关系图",
+        "网络图",
+        "节点连线",
+        "数据关系",
+        "中心聚焦",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "元素简洁",
+        "dataset",
+        "tooltip",
+        "legend",
+        "series"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "以节点-边（node-link）结构呈现多维关联关系",
+        "支持颜色编码的节点分组（如图例所示A–I色系）",
+        "大量细线连接体现复杂依赖或流向",
+        "中心区域高密度节点与外围稀疏分布形成视觉焦点",
+        "无坐标轴，非传统统计图表形式"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "scatter_chart",
+        "table_grid",
+        "map",
+        "funnel_chart"
+      ]
+    },
+    {
+      "componentId": "Heatmap",
+      "title": "热力图",
+      "category": "Mores",
+      "contentType": "table",
+      "visualForm": "table_grid",
+      "layout": "grid",
+      "semanticKeywords": [
+        "热力图",
+        "heatmap",
+        "数据矩阵",
+        "数值密度",
+        "时间维度",
+        "行列布局",
+        "深色背景",
+        "蓝调渐变",
+        "中心聚焦",
+        "低对比度",
+        "信息结构",
+        "dataset"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "行列标签（时间轴+日期）+ 数值单元格的二维网格结构",
+        "颜色深度反映数值大小的视觉编码（color scale）",
+        "深色背景与蓝系主色搭配",
+        "无明显图形元素（如柱/线/点），纯数据密度可视化",
+        "支持tooltip显示具体数值",
+        "底部配以滑块控件（可选交互）"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "scatter_chart",
+        "pie_chart",
+        "funnel_chart",
+        "wordcloud",
+        "metric_card",
+        "map"
+      ]
+    },
+    {
+      "componentId": "InputsDate",
+      "title": "时间选择器",
+      "category": "Inputs",
+      "contentType": "filter",
+      "visualForm": "panel",
+      "layout": "centered",
+      "semanticKeywords": [
+        "时间选择器",
+        "日期选择",
+        "日历面板",
+        "date picker",
+        "time input",
+        "datetime selector",
+        "深色主题",
+        "蓝主色",
+        "交互控件",
+        "下拉面板",
+        "当前时刻",
+        "月份导航"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色主色调的面板式设计",
+        "顶部输入框带占位符‘选择日期’与日历图标",
+        "中部为可交互日历网格（含年月切换、星期缩写、日期数字）",
+        "右下角独立‘此刻’按钮作为快捷操作",
+        "整体为弹出式面板结构，非内嵌组件"
+      ],
+      "negativeMatches": [
+        "date_range",
+        "time_picker",
+        "calendar_view",
+        "input_text",
+        "dropdown_list",
+        "slider",
+        "radio_group",
+        "checkbox_group"
+      ]
+    },
+    {
+      "componentId": "InputsInput",
+      "title": "输入框",
+      "category": "Inputs",
+      "contentType": "input",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "输入框",
+        "文本输入",
+        "placeholder",
+        "深色主题",
+        "蓝主色",
+        "交互控件",
+        "dataset数据入口",
+        "inputValue",
+        "componentInteractEventKey",
+        "预览",
+        "低对比"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色主色调",
+        "左侧聚焦布局",
+        "带占位符文字的单行矩形输入框",
+        "顶部三圆点窗口控制按钮",
+        "无标签/无图标，纯输入区域",
+        "视觉上强调输入行为而非展示"
+      ],
+      "negativeMatches": [
+        "filter",
+        "metric_card",
+        "chart",
+        "table",
+        "panel",
+        "decorate"
+      ]
+    },
+    {
+      "componentId": "InputsPagination",
+      "title": "分页",
+      "category": "Inputs",
+      "contentType": "panel",
+      "visualForm": "pagination_bar",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "分页",
+        " Pagination",
+        "页码",
+        "page",
+        "上一页",
+        "下一页",
+        "每页",
+        "pageSize",
+        "当前页",
+        "pageValue",
+        "交互控件",
+        "低对比",
+        "深色背景",
+        "蓝主色"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝主色高亮当前页码",
+        "左侧< >按钮与中间数字页码组合布局",
+        "右侧'X / 页'下拉选择器（含中文'页'）",
+        "中心聚焦式布局，元素间距均匀",
+        "无额外装饰，极简交互控件结构"
+      ],
+      "negativeMatches": [
+        "table_grid",
+        "border_frame",
+        "chart",
+        "filter",
+        "metric_card",
+        "wordcloud",
+        "line_chart",
+        "area_chart"
+      ]
+    },
+    {
+      "componentId": "InputsSelect",
+      "title": "下拉选择器",
+      "category": "Inputs",
+      "contentType": "filter",
+      "visualForm": "border_frame",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "下拉选择器",
+        "下拉菜单",
+        "选择控件",
+        "select",
+        "dropdown",
+        "选项列表",
+        "单选",
+        "交互控件",
+        "深色主题",
+        "蓝主色",
+        "低对比度"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝主色配色方案",
+        "左侧聚焦布局（上部为触发按钮，下方为展开选项列表）",
+        "带勾选标记的选项项（当前选中项高亮并显示✓）",
+        "圆角矩形边框与轻微阴影营造悬浮感",
+        "无图标仅文字的简洁选项设计",
+        "独立可交互的下拉触发区域与展开面板分离结构"
+      ],
+      "negativeMatches": [
+        "InputsCheckbox",
+        "InputsRadio",
+        "InputsSwitch",
+        "InputsSlider",
+        "InputsText",
+        "InputsDate",
+        "InputsRange",
+        "InputsMultiSelect",
+        "InputsSearch",
+        "InputsUpload"
+      ]
+    },
+    {
+      "componentId": "InputsTab",
+      "title": "标签选择器",
+      "category": "Inputs",
+      "contentType": "tab",
+      "visualForm": "horizontal_tab_bar",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "标签选择器",
+        "选项卡",
+        "tab",
+        "切换",
+        "导航",
+        "深色主题",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "交互控件",
+        "配置面板",
+        "dataset入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "水平排列的分段式标签栏",
+        "单选/多选标签项（如'选项1'）",
+        "高亮当前选中项的视觉反馈",
+        "深色背景+蓝色系配色",
+        "无图标仅文字标签",
+        "无额外按钮或下拉，纯横向布局"
+      ],
+      "negativeMatches": [
+        "vertical_tabs",
+        "accordion",
+        "radio_group",
+        "checkbox_group",
+        "dropdown",
+        "slider",
+        "input_field",
+        "button_group"
+      ]
+    },
+    {
+      "componentId": "KeySecurity3D",
+      "title": "密钥态势-3D看板",
+      "category": "Biz",
+      "contentType": "panel",
+      "visualForm": "3d_cylinder_rings",
+      "layout": "centered",
+      "semanticKeywords": [
+        "密钥态势",
+        "3D看板",
+        "青蓝主色",
+        "深色背景",
+        "业务专题",
+        "数据入口",
+        "中心聚焦",
+        "分区布局",
+        "中对比",
+        "科技感",
+        "环形波纹"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "立体3D柱体结构（含切口设计）",
+        "多层环形光效/波纹动态元素",
+        "底部带点阵与扇形刻度的圆形基座",
+        "整体呈垂直堆叠+悬浮视觉层次",
+        "高饱和度青蓝色渐变+发光粒子点缀"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "map",
+        "wordcloud",
+        "liquid_vertical_bar",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "LineCommon",
+      "title": "折线图",
+      "category": "Lines",
+      "contentType": "line_chart",
+      "visualForm": "line_chart",
+      "layout": "centered",
+      "semanticKeywords": [
+        "折线图",
+        "趋势图",
+        "双线",
+        "深色背景",
+        "蓝绿主色",
+        "低对比",
+        "数据趋势",
+        "xAxis",
+        "yAxis",
+        "tooltip",
+        "dataset",
+        "时间序列"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "双色折线（蓝+绿）叠加展示",
+        "深灰背景 + 灰色网格线",
+        "点状数据标记 + 连接线",
+        "顶部图例栏（含色块与条形）",
+        "X轴为星期标签，Y轴数值刻度",
+        "中心聚焦式布局，无多余装饰"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "LineGradients",
+      "title": "双折线渐变面积图",
+      "category": "Lines",
+      "contentType": "line_chart",
+      "visualForm": "double_line_gradient_area",
+      "layout": "centered",
+      "semanticKeywords": [
+        "双折线",
+        "渐变面积图",
+        "深色背景",
+        "蓝绿主色",
+        "趋势图",
+        "数据可视化",
+        "折线图",
+        "面积填充",
+        "中心聚焦",
+        "低对比度",
+        "均衡分区",
+        "tooltip配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "双折线叠加渐变填充区域",
+        "深色背景与柔和渐变色系",
+        "xAxis为时间轴（Mon–Sun）",
+        "yAxis带数值刻度",
+        "数据源标注为dataset",
+        "顶部含简化的图例/控制条元素",
+        "无柱状/饼状/散点等其他图形干扰"
+      ],
+      "negativeMatches": [
+        "single_line_chart",
+        "area_chart_only_one_series",
+        "bar_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "metric_card",
+        "table_grid"
+      ]
+    },
+    {
+      "componentId": "LineGradientSingle",
+      "title": "单折线渐变面积图",
+      "category": "Lines",
+      "contentType": "line_chart",
+      "visualForm": "line_gradient_area",
+      "layout": "centered",
+      "semanticKeywords": [
+        "单折线",
+        "渐变面积",
+        "深色背景",
+        "蓝主色",
+        "趋势图",
+        "tooltip",
+        "xAxis",
+        "yAxis",
+        "dataset",
+        "低对比",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "仅一条数据系列（单折线）",
+        "折线与下方区域填充形成渐变面积效果",
+        "深色背景 + 蓝色主色调 + 低对比度设计",
+        "顶部含简化的图例/指示器（两个方块+条形）",
+        "坐标轴标签为英文星期缩写，无标题或单位标注"
+      ],
+      "negativeMatches": [
+        "multi_line_chart",
+        "area_chart_multiple",
+        "bar_chart",
+        "scatter_chart",
+        "pie_chart",
+        "funnel_chart",
+        "liquid_vertical_bar",
+        "donut_pie"
+      ]
+    },
+    {
+      "componentId": "LineLinearSingle",
+      "title": "单折线渐变图",
+      "category": "Lines",
+      "contentType": "line_chart",
+      "visualForm": "line_chart_gradient",
+      "layout": "centered",
+      "semanticKeywords": [
+        "单折线",
+        "渐变色",
+        "深色背景",
+        "趋势图",
+        "数据波动",
+        "tooltip交互",
+        "xAxis时间轴",
+        "yAxis数值轴",
+        "dataset数据源",
+        "低对比度"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "单一折线（非多线叠加）",
+        "线体填充渐变阴影（非纯线或点状）",
+        "深色暗黑背景与蓝绿主色调搭配",
+        "X轴为周几（Mon–Sun）等离散时间标签",
+        "顶部含小图标/图例条块（非完整图例区）",
+        "无柱状/饼状/散点等其他图形混杂"
+      ],
+      "negativeMatches": [
+        "multi_line_chart",
+        "area_chart",
+        "bar_chart",
+        "scatter_chart",
+        "pie_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "liquidBar",
+      "title": "液体柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "liquid_vertical_bar",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "液体柱状图",
+        "液态柱",
+        "进度柱",
+        "动态填充柱",
+        "echarts液体柱",
+        "百分比柱",
+        "数据可视化",
+        "渐变填充",
+        "动画柱",
+        "垂直液体柱",
+        "底部发光",
+        "橙色填充"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "柱体内部具有可动态填充的液态区域（非纯色填充）",
+        "底部带有环形发光效果",
+        "柱体高度固定，填充高度随数值变化",
+        "支持动画效果（animation, animationDuration等）",
+        "主字段包含title与dataset数据源",
+        "典型用于展示完成度、占比或层级分布"
+      ],
+      "negativeMatches": [
+        "standard_bar",
+        "horizontal_bar",
+        "stacked_bar",
+        "grouped_bar",
+        "donut_pie",
+        "area_chart",
+        "line_chart",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "MapAmap",
+      "title": "高德地图",
+      "category": "Maps",
+      "contentType": "map",
+      "visualForm": "geographic_map",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "高德地图",
+        "地理分布",
+        "深色背景",
+        "蓝主色",
+        "信息密集",
+        "中心聚焦",
+        "dataset",
+        "mapOptions",
+        "区域标注",
+        "地名标签",
+        "低对比度",
+        "横向延展"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深蓝色底图+蓝/绿/白文字标注的典型高德风格",
+        "以行政区划与地标名称为视觉核心的地理信息布局",
+        "无明显图表元素（如柱状、折线），纯空间分布展示",
+        "强调区域边界与地名密度，非数据可视化图表",
+        "中心区域信息密度最高，向四周渐疏"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table",
+        "metric_card",
+        "chart",
+        "decorate",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "MapBase",
+      "title": "地图(可选省份)",
+      "category": "Maps",
+      "contentType": "map",
+      "visualForm": "choropleth_map",
+      "layout": "centered",
+      "semanticKeywords": [
+        "地图",
+        "地理分布",
+        "省份",
+        "数据可视化",
+        "深色背景",
+        "蓝主色",
+        "分区着色",
+        "区域对比",
+        "tooltip标注",
+        "visualMap",
+        "dataset驱动",
+        "中国地图"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝系渐变填充的省级行政区划图",
+        "内置图例（数值区间分层）",
+        "支持省份级选择与高亮",
+        "地图上叠加城市名称与定位点",
+        "右下角小比例尺/插图辅助",
+        "中心聚焦式布局，无多余装饰元素"
+      ],
+      "negativeMatches": [
+        "table",
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "chart",
+        "decorate",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "Number",
+      "title": "数字计数",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "text_metric",
+      "layout": "centered",
+      "semanticKeywords": [
+        "数字计数",
+        "金额显示",
+        "货币单位",
+        "深色背景",
+        "蓝主色",
+        "简洁",
+        "低对比",
+        "中心聚焦",
+        "数值展示",
+        "金融数据",
+        "大号字体",
+        "无图表"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纯文本数值+货币符号组合，无图形化元素",
+        "深色背景与蓝色文字形成柔和对比",
+        "顶部三圆点指示器（可能为状态/菜单）",
+        "无边框或装饰性框架，强调内容本身",
+        "无交互控件或筛选器，仅作信息呈现"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table",
+        "map",
+        "filter",
+        "chart",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "Pie3DExploded",
+      "title": "3D平台来源饼图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_exploded",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D饼图",
+        "爆炸式饼图",
+        "平台来源",
+        "数据占比",
+        "深色背景",
+        "蓝紫主色",
+        "环形结构",
+        "立体切片",
+        "百分比标签",
+        "数值标注",
+        "中心聚焦",
+        "横向延展"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "3D立体切片效果（部分扇区明显弹出）",
+        "深色科技感背景与发光环形底座",
+        "主色调为蓝/紫渐变，高对比度配色",
+        "标签以引线连接至对应扇区，含百分比+平台名称+人数",
+        "支持pie3DPresetKey、pie3DFields等3D专属配置项",
+        "非标准圆形，具空间纵深感的环形占比结构"
+      ],
+      "negativeMatches": [
+        "2D饼图",
+        "环形图（donut）",
+        "堆叠柱状图",
+        "条形图",
+        "雷达图",
+        "漏斗图",
+        "折线图",
+        "散点图"
+      ]
+    },
+    {
+      "componentId": "Pie3DMultiLayer",
+      "title": "3D城市层级饼图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_multilayer",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D饼图",
+        "多层环形",
+        "城市层级",
+        "深色背景",
+        "蓝黄主色",
+        "数据占比",
+        "视觉聚焦",
+        "科技感",
+        "环形结构",
+        "分层展示",
+        "城市人口",
+        "数据标签"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "3D立体分层环形结构",
+        "多层嵌套/堆叠切片设计",
+        "深色科技背景与发光底座",
+        "主色为蓝色+黄色高对比配色",
+        "中心聚焦式布局，强调层级关系",
+        "数据标签以引线形式从切片延伸至外部",
+        "支持多层级分类（如一线/二线/三线城市）"
+      ],
+      "negativeMatches": [
+        "2D饼图",
+        "环形图（单层）",
+        "雷达图",
+        "柱状图",
+        "折线图",
+        "地图",
+        "仪表盘",
+        "液态条形图"
+      ]
+    },
+    {
+      "componentId": "Pie3DRingRegion",
+      "title": "3D地区分布环图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_ring",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D环图",
+        "地区分布",
+        "环形占比",
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "中心聚焦",
+        "数据可视化",
+        "区域统计",
+        "立体饼图",
+        "ring_pie_3d",
+        "regional_distribution"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "3D立体环形结构（非平面）",
+        "中心镂空、环状分段",
+        "彩色分块+外部标签引线标注",
+        "深色背景高对比度显示",
+        "支持多区域百分比与绝对值双维度标注",
+        "视觉焦点集中于环形本体"
+      ],
+      "negativeMatches": [
+        "2D饼图",
+        "扇形图",
+        "雷达图",
+        "漏斗图",
+        "条形图",
+        "折线图",
+        "地图",
+        "仪表盘"
+      ]
+    },
+    {
+      "componentId": "Pie3DRingUser",
+      "title": "3D用户类型环图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_ring",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D环图",
+        "用户类型",
+        "深色背景",
+        "蓝绿橙配色",
+        "占比结构",
+        "中心聚焦",
+        "数据可视化",
+        "环形图",
+        "用户分层",
+        "动态环"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "立体环形结构（非平面）",
+        "三段式分层占比（新/老/沉默）",
+        "外侧标签+数值+单位组合标注",
+        "深色科技感背景与发光边框",
+        "中心镂空+同心圆刻度装饰",
+        "主配置项明确指向pie3DPresetKey/pie3DFields等3D专属参数"
+      ],
+      "negativeMatches": [
+        "2D环图（如donut_pie）",
+        "饼图（flat_pie）",
+        "条形图（bar_chart）",
+        "仪表盘（gauge）",
+        "漏斗图（funnel_chart）",
+        "普通表格（table）"
+      ]
+    },
+    {
+      "componentId": "Pie3DTwoBlue",
+      "title": "3D双端占比饼图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_two_slice",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D饼图",
+        "双端占比",
+        "蓝主色",
+        "深色背景",
+        "环形结构",
+        "横向延展",
+        "中心聚焦",
+        "数据可视化",
+        "占比展示",
+        "科技感",
+        "动态切片",
+        "标签引线"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "3D立体环形结构且仅显示两个主要数据段（双端）",
+        "深蓝色背景与亮蓝色主体形成高对比度",
+        "左右对称标签布局（28% / 72%），带引线连接至对应扇区",
+        "底部发光环形底座增强科技感与层次感",
+        "主配置项明确包含pie3DPresetKey、pie3DFields等3D专属参数"
+      ],
+      "negativeMatches": [
+        "普通2D饼图",
+        "多段环形图（如多于3个数据段）",
+        "液态/水滴形图表",
+        "条形/柱状图",
+        "地图/地理可视化",
+        "仪表盘式图表"
+      ]
+    },
+    {
+      "componentId": "Pie3DTwoCyan",
+      "title": "3D活跃用户饼图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "pie3d_two_slice",
+      "layout": "centered",
+      "semanticKeywords": [
+        "3D饼图",
+        "活跃用户",
+        "蓝青配色",
+        "深色背景",
+        "环形占比",
+        "数据可视化",
+        "科技感",
+        "高对比度",
+        "中心聚焦",
+        "横向延展",
+        "分段标注",
+        "动态切片"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "3D立体环形结构且仅两块主切片（一突出、一常规）",
+        "深色科技背景+蓝色渐变主色系",
+        "左右双标签外引线标注（百分比+分类+数值）",
+        "底部环形科技光效底座",
+        "主视觉聚焦于中心切片分离处",
+        "无图例，依赖直接标注"
+      ],
+      "negativeMatches": [
+        "普通2D饼图",
+        "多切片环形图",
+        "堆叠柱状图",
+        "仪表盘式图表",
+        "带图例的3D饼图",
+        "纯装饰性边框/面板",
+        "垂直布局的条形图"
+      ]
+    },
+    {
+      "componentId": "PieCircle",
+      "title": "饼图-环形",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "donut_pie",
+      "layout": "centered",
+      "semanticKeywords": [
+        "饼图",
+        "环形图",
+        "进度环",
+        "占比",
+        "70%",
+        "蓝主色",
+        "深色背景",
+        "中心聚焦",
+        "低对比",
+        "tooltip",
+        "legend",
+        "dataset"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "环形空心结构（非实心饼图）",
+        "中心显示百分比数值",
+        "单色渐变/高亮描边强调当前占比",
+        "无扇区分割线或标签",
+        "极简设计，无额外图例/标题元素"
+      ],
+      "negativeMatches": [
+        "solid_pie",
+        "radar_chart",
+        "gauge",
+        "liquid_bar",
+        "table_grid",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "PieCommon",
+      "title": "饼图",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "donut_pie",
+      "layout": "centered",
+      "semanticKeywords": [
+        "饼图",
+        "环形图",
+        "占比",
+        "数据分布",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "中对比",
+        "中心聚焦",
+        "isCarousel",
+        "type",
+        "tooltip",
+        "legend",
+        "dataset"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "环形结构（非实心饼图）",
+        "多色分段且有明显间隙",
+        "中心留白突出环形占比",
+        "深色背景+亮色区块形成中对比",
+        "顶部带指示器条与小方块的控制层"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "PipelineH",
+      "title": "管道-横向",
+      "category": "Mores",
+      "contentType": "bar_chart",
+      "visualForm": "horizontal_bar_segmented",
+      "layout": "centered",
+      "semanticKeywords": [
+        "管道",
+        "横向",
+        "流程",
+        "步骤",
+        "蓝主色",
+        "深色背景",
+        "低对比",
+        "分区布局",
+        "中心聚焦",
+        "配置项",
+        "color_type",
+        "o_color",
+        "i_color",
+        "line_class"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "横向三段式条形结构，内部含三个子段落；深灰背景与蓝色主色调形成低对比度视觉；无文字标签但具流程指示性；顶部仅三圆点控件，无标题/按钮等冗余元素；强调配置参数（color_type等）的可视化映射"
+      ],
+      "negativeMatches": [
+        "vertical_pipeline",
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "border_frame",
+        "funnel_chart"
+      ]
+    },
+    {
+      "componentId": "PipelineV",
+      "title": "管道-纵向",
+      "category": "Mores",
+      "contentType": "decorate",
+      "visualForm": "vertical_pipeline_bar",
+      "layout": "centered",
+      "semanticKeywords": [
+        "管道",
+        "纵向",
+        "深色背景",
+        "蓝主色",
+        "分区布局",
+        "低对比",
+        "中心聚焦",
+        "信息结构",
+        "color_type",
+        "o_color",
+        "i_color",
+        "line_class"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "垂直长条形主体结构，内含三段式蓝色块；深灰/黑背景；顶部三圆点控制按钮；无文字标签或数据内容，纯视觉引导；强调流程层级与方向性"
+      ],
+      "negativeMatches": [
+        "horizontal_pipeline_bar",
+        "liquid_vertical_bar",
+        "border_frame",
+        "table_grid",
+        "panel",
+        "bar_chart"
+      ]
+    },
+    {
+      "componentId": "PrismaticBar",
+      "title": "棱柱柱状图",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "prismatic_vertical_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "棱柱柱状图",
+        "3D柱状图",
+        "立体柱状图",
+        "echarts柱状图",
+        "垂直柱状图",
+        "应用数据",
+        "数值对比",
+        "蓝色渐变",
+        "网格背景",
+        "title-legend-tooltip"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "柱体具有明显的棱柱/立体感（非平面矩形）",
+        "使用蓝白渐变填充，带高光效果",
+        "柱体高度对应数值轴（0–1200）",
+        "底部标签为中文应用名（应用1–5）",
+        "背景含水平网格线",
+        "支持title、legend、tooltip、grid等ECharts标准配置"
+      ],
+      "negativeMatches": [
+        "liquid_vertical_bar",
+        "donut_pie",
+        "table_grid",
+        "border_frame",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud"
+      ]
+    },
+    {
+      "componentId": "Process",
+      "title": "NaiveUI-进度",
+      "category": "Mores",
+      "contentType": "metric_card",
+      "visualForm": "liquid_vertical_bar",
+      "layout": "centered",
+      "semanticKeywords": [
+        "进度",
+        "百分比",
+        "环形进度条",
+        "水平进度条",
+        "数据可视化",
+        "状态指示",
+        "NaiveUI",
+        "深色主题",
+        "蓝灰配色",
+        "聚焦中心",
+        "轻量级",
+        "信息结构"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "双进度表现形式（环形+条形）",
+        "中心数字百分比显示",
+        "蓝灰主色搭配，低对比度设计",
+        "深色背景下的简洁元素布局",
+        "无轴线/标签的极简信息结构"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table",
+        "map",
+        "filter",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "Radar",
+      "title": "雷达图",
+      "category": "Mores",
+      "contentType": "chart",
+      "visualForm": "radar_chart",
+      "layout": "centered",
+      "semanticKeywords": [
+        "雷达图",
+        "多维数据",
+        "综合评估",
+        "维度对比",
+        "环形结构",
+        "数据可视化",
+        "深色主题",
+        "蓝绿配色",
+        "动势线条",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "六边形/星形坐标系结构",
+        "多条放射状轴线（6轴）",
+        "多组折线填充区域（如蓝/绿双线）",
+        "中心对称布局",
+        "低对比度灰白网格背景",
+        "数据标签沿轴线分布",
+        "深色主背景+亮色数据点/线"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar",
+        "donut_pie"
+      ]
+    },
+    {
+      "componentId": "Sankey",
+      "title": "桑基图",
+      "category": "Mores",
+      "contentType": "chart",
+      "visualForm": "sankey_flow",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "桑基图",
+        "流向图",
+        "流程图",
+        "数据流",
+        "层级关系",
+        "连接强度",
+        "纵向堆叠",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "信息结构"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纵向排列的节点带流动带连接",
+        "节点为垂直条形，流量以平滑带表示",
+        "支持多源汇（如a→b1→a1/a2/c）",
+        "强调流量大小与路径分支",
+        "深色背景+高对比节点/流带",
+        "无坐标轴，依赖节点位置与流宽表达关系"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "funnel_chart",
+        "flow_chart",
+        "tree_map",
+        "network_graph"
+      ]
+    },
+    {
+      "componentId": "ScatterCommon",
+      "title": "散点图",
+      "category": "Scatters",
+      "contentType": "scatter_chart",
+      "visualForm": "scatter_plot",
+      "layout": "centered",
+      "semanticKeywords": [
+        "散点图",
+        "点状分布",
+        "数据可视化",
+        "xAxis",
+        "yAxis",
+        "dataset",
+        "tooltip",
+        "深色背景",
+        "蓝绿主色",
+        "中对比度",
+        "横向延展",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "二维坐标系下的点状数据分布",
+        "支持多组数据簇（如蓝/绿两色分组）",
+        "带数值标签的突出数据点（如105.2, 116.4）",
+        "可配置的区域框选（虚线矩形）",
+        "深色主题+高对比度蓝绿配色",
+        "顶部辅助控件区（按钮、滑块）与图表区分离"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "map",
+        "table",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "ScatterLogarithmicRegression",
+      "title": "对数回归散点图",
+      "category": "Scatters",
+      "contentType": "scatter_chart",
+      "visualForm": "scatter_log_regression",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "对数回归",
+        "散点图",
+        "logarithmic regression",
+        "y = a + b ln(x)",
+        "数据拟合",
+        "趋势线",
+        "深色背景",
+        "蓝绿配色",
+        "点状分布",
+        "中心聚焦",
+        "中对比度",
+        "横向延展"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "包含明确的对数回归公式标注（y = a + b ln(x)）",
+        "趋势线为非线性对数曲线而非直线",
+        "数据点以大小/颜色区分，存在重叠气泡效果",
+        "深色背景+高对比度文字与线条",
+        "主配置项明确指向dataset、tooltip、legend、xAxis"
+      ],
+      "negativeMatches": [
+        "scatter_chart (仅线性散点)",
+        "line_chart",
+        "area_chart",
+        "bar_chart",
+        "bubble_chart (无回归线)",
+        "chart (通用占位符)",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "TableList",
+      "title": "滚动排名列表",
+      "category": "Tables",
+      "contentType": "table",
+      "visualForm": "table_grid",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "滚动排名列表",
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "低对比",
+        "左侧聚焦",
+        "bar_chart",
+        "ranking",
+        "dataset",
+        "rowNum",
+        "waitTime",
+        "unit"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝色条形结合的低对比度设计",
+        "纵向排列的带标签条形项（如'No.1', 'No.2'）",
+        "每行包含标题+数值+进度条三部分结构",
+        "左侧对齐标题与序号，右侧为数值和进度条",
+        "无表头/列名，强调数据序列而非表格结构"
+      ],
+      "negativeMatches": [
+        "standard_table",
+        "data_grid",
+        "metric_card",
+        "bar_chart",
+        "horizontal_bar_chart"
+      ]
+    },
+    {
+      "componentId": "TablesBasic",
+      "title": "基础分页表格",
+      "category": "Tables",
+      "contentType": "table",
+      "visualForm": "table_grid",
+      "layout": "centered",
+      "semanticKeywords": [
+        "基础分页表格",
+        "数据表格",
+        "分页",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "栅格结构",
+        "dataset配置",
+        "pagination",
+        "align",
+        "style",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝色主色调的组合",
+        "清晰的三列栅格布局（产品名称、销量、销售额）",
+        "底部独立分页控件（< > 和数字按钮）",
+        "顶部搜索框与标题区分离",
+        "行内无复杂交互元素，强调数据展示"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "map",
+        "filter",
+        "wordcloud",
+        "funnel_chart",
+        "scatter_chart",
+        "area_chart",
+        "chart",
+        "decorate",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "TableScrollBoard",
+      "title": "轮播列表",
+      "category": "Tables",
+      "contentType": "table",
+      "visualForm": "table_grid",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "轮播列表",
+        "滚动表格",
+        "深色背景",
+        "蓝青主色",
+        "分区布局",
+        "信息密集",
+        "低对比度",
+        "中心聚焦",
+        "栅格结构",
+        "header_dataset_index_columnWidth",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝青渐变高亮表头的组合",
+        "垂直堆叠的行式数据展示+固定列宽",
+        "顶部三圆点指示器暗示可滚动/切换",
+        "无边框或极细边框的紧凑网格布局",
+        "强调数据集（dataset）作为核心输入源",
+        "非交互式预览态，侧重静态信息密度"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "map",
+        "metric_card",
+        "filter",
+        "wordcloud",
+        "funnel_chart",
+        "scatter_chart",
+        "area_chart",
+        "border_frame",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "TextBarrage",
+      "title": "弹幕文字",
+      "category": "Texts",
+      "contentType": "decorate",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "弹幕",
+        "文字流",
+        "滚动文本",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "简洁排版",
+        "数据驱动",
+        "动态文本",
+        "视觉焦点",
+        "信息提示"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色主色调的低对比设计",
+        "单行居中对齐的文本容器，带细边框",
+        "顶部三圆点控件暗示可交互/可关闭",
+        "强调文本内容本身而非图表或数据结构",
+        "非数据可视化组件，仅承载纯文本信息"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "metric_card",
+        "table",
+        "map",
+        "wordcloud",
+        "funnel_chart",
+        "scatter_chart",
+        "area_chart",
+        "filter",
+        "panel"
+      ]
+    },
+    {
+      "componentId": "TextCommon",
+      "title": "文字",
+      "category": "Texts",
+      "contentType": "text",
+      "visualForm": "border_frame",
+      "layout": "centered",
+      "semanticKeywords": [
+        "文字",
+        "文本",
+        "排版",
+        "标题",
+        "主配置",
+        "linkHead",
+        "dataset",
+        "fontSize",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色文字的低对比配色方案",
+        "居中对齐的带边框文本区域",
+        "无数据图表元素，纯文本内容展示",
+        "顶部三圆点窗口控制按钮样式",
+        "强调文本结构与语义层级而非数据可视化"
+      ],
+      "negativeMatches": [
+        "chart",
+        "metric_card",
+        "table",
+        "map",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "filter",
+        "panel",
+        "decorate"
+      ]
+    },
+    {
+      "componentId": "TextGradient",
+      "title": "渐变文字",
+      "category": "Texts",
+      "contentType": "decorate",
+      "visualForm": "gradient_text",
+      "layout": "centered",
+      "semanticKeywords": [
+        "渐变文字",
+        "文本渐变",
+        "色彩过渡",
+        "视觉焦点",
+        "低对比度",
+        "深色背景",
+        "主配置dataset",
+        "size",
+        "gradient",
+        "数据驱动",
+        "简洁排版",
+        "中心聚焦"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纯文本+水平渐变色（蓝→绿）",
+        "无边框/无图形元素，仅文字与少量图标",
+        "深色背景衬托低对比度渐变",
+        "支持通过dataset、size、gradient动态配置",
+        "非数据可视化组件，属装饰性文本"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table",
+        "map",
+        "filter",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "ThreeEarth01",
+      "title": "三维地球",
+      "category": "Three",
+      "contentType": "map",
+      "visualForm": "3d_earth_with_annotations",
+      "layout": "centered",
+      "semanticKeywords": [
+        "三维地球",
+        "3D地球",
+        "地理可视化",
+        "空间数据",
+        "地球模型",
+        "蓝光科技感",
+        "深色背景",
+        "区域标注",
+        "轨迹线",
+        "数据入口",
+        "dataset配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "立体球形地球主体",
+        "蓝色霓虹大陆轮廓",
+        "深空暗背景",
+        "多轨道/轨迹线环绕",
+        "中文地理标签+定位点",
+        "中心聚焦式构图",
+        "非传统2D地图投影"
+      ],
+      "negativeMatches": [
+        "2D地图",
+        "热力图",
+        "散点地图",
+        "卫星影像图",
+        "普通球体仪表盘",
+        "纯装饰性地球"
+      ]
+    },
+    {
+      "componentId": "TimeCommon",
+      "title": "通用时间",
+      "category": "Mores",
+      "contentType": "title",
+      "visualForm": "text_display",
+      "layout": "centered",
+      "semanticKeywords": [
+        "通用时间",
+        "时间显示",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "timeSize",
+        "timeColor",
+        "timeTextIndent",
+        "timeLineHeight",
+        "日期时间",
+        "信息结构"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景+蓝色文字的低对比设计",
+        "仅包含日期时间文本，无图表/交互元素",
+        "顶部三圆点指示器（可能为状态/菜单）",
+        "文本居中对齐，强调时间信息本身",
+        "无边框/装饰框架，极简布局"
+      ],
+      "negativeMatches": [
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table",
+        "map",
+        "filter",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "title1",
+      "title": "标题1",
+      "category": "Title",
+      "contentType": "title",
+      "visualForm": "banner_header",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "标题",
+        "横幅",
+        "深色背景",
+        "蓝主色",
+        "中心聚焦",
+        "横向延展",
+        "简洁",
+        "中对比",
+        "主配置",
+        "dataset",
+        "fontColor",
+        "fontSize",
+        "fontWeight"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色渐变背景与蓝色主体融合的横幅式结构",
+        "文字居中、无边框但有上下层叠/波浪形装饰轮廓",
+        "强调视觉焦点于标题文本，非数据展示",
+        "支持通过dataset动态绑定标题内容",
+        "非数据卡片或图表容器，仅作标题引导"
+      ],
+      "negativeMatches": [
+        "table",
+        "metric_card",
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "panel",
+        "border"
+      ]
+    },
+    {
+      "componentId": "TreeMap",
+      "title": "树形分布",
+      "category": "Mores",
+      "contentType": "chart",
+      "visualForm": "treemap",
+      "layout": "centered",
+      "semanticKeywords": [
+        "树形分布",
+        "面积图",
+        "层级结构",
+        "数据占比",
+        "可视化分组",
+        "中性背景",
+        "蓝主色",
+        "均衡分区",
+        "高对比",
+        "中心聚焦",
+        "dataset",
+        "series"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "矩形区块按面积比例嵌套排列",
+        "无连接线，仅通过空间邻接表达层级",
+        "区块内含节点标签（如nodeBa1）",
+        "深色背景衬托彩色区块以增强对比",
+        "非环形/条形/点状等其他图表形态"
+      ],
+      "negativeMatches": [
+        "pie_chart",
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "map",
+        "table",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "VChartArea",
+      "title": "VChart面积图",
+      "category": "Areas",
+      "contentType": "area_chart",
+      "visualForm": "area_chart",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "面积图",
+        "区域图",
+        "趋势图",
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "低对比",
+        "中心聚焦",
+        "VChart",
+        "dataset",
+        "xField",
+        "yField",
+        "面积趋势"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "填充区域的折线图形式",
+        "深色渐变背景",
+        "双数据系列（蓝+青）",
+        "底部横轴标签为分类（Nail polish/Rouge/Eyeshadows）",
+        "无柱状/饼状/散点等其他图形元素",
+        "强调面积覆盖而非离散点"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "metric_card",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "VChartBarCommon",
+      "title": "并列柱状图-VChart",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "stacked_vertical_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "并列柱状图",
+        "堆叠柱状图",
+        "VChart",
+        "深色背景",
+        "蓝主色",
+        "纵向堆叠",
+        "低对比度",
+        "中心聚焦",
+        "Autocracies",
+        "Democracies"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纵向堆叠结构（蓝色主柱 + 绿色子柱）",
+        "深色背景 + 渐变填充柱体",
+        "双系列数据对比（Autocracies/Democracies）",
+        "X轴为年份时间序列",
+        "无网格线/仅虚线刻度线，视觉简洁",
+        "标题与图例位于图表上方"
+      ],
+      "negativeMatches": [
+        "simple_vertical_bar",
+        "horizontal_bar",
+        "donut_pie",
+        "line_chart",
+        "area_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "metric_card",
+        "table_grid"
+      ]
+    },
+    {
+      "componentId": "VChartBarCrossrange",
+      "title": "并列柱状图-VChart",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "crossrange_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "并列柱状图",
+        "横向对比",
+        "双色分组",
+        "深色背景",
+        "蓝主色",
+        "低对比度",
+        "中心聚焦",
+        "xField轴",
+        "dataset数据源",
+        "stack堆叠"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "左右并列双柱（Autocracies/Democracies）",
+        "纵向分类轴（年份）",
+        "横向数值轴",
+        "深色背景+蓝/青配色",
+        "无网格线干扰，简洁留白",
+        "主配置强调type、dataset、xField、stack"
+      ],
+      "negativeMatches": [
+        "single_bar",
+        "horizontal_bar",
+        "stacked_bar",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart"
+      ]
+    },
+    {
+      "componentId": "VChartBarStack",
+      "title": "堆叠柱状图-VChart",
+      "category": "Bars",
+      "contentType": "bar_chart",
+      "visualForm": "stacked_vertical_bar",
+      "layout": "vertical",
+      "semanticKeywords": [
+        "堆叠柱状图",
+        "纵向堆叠",
+        "深色背景",
+        "蓝绿色主色",
+        "数据对比",
+        "分层柱形",
+        "年龄分组",
+        "VChart",
+        "dataset配置",
+        "xField/yField",
+        "中心聚焦",
+        "低对比度"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "纵向堆叠结构（非横向）",
+        "多层颜色分段（Under 5 Years / 5 to 13 Years / 14 to 17 Years）",
+        "深色主题背景",
+        "底部带滑动条/范围控件的横轴延伸",
+        "明确的图例与字段映射"
+      ],
+      "negativeMatches": [
+        "horizontal_bar",
+        "donut_pie",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "metric_card",
+        "table_grid"
+      ]
+    },
+    {
+      "componentId": "VChartFunnel",
+      "title": "漏斗图-VChart",
+      "category": "Funnels",
+      "contentType": "funnel_chart",
+      "visualForm": "funnel",
+      "layout": "centered",
+      "semanticKeywords": [
+        "漏斗图",
+        " funnel chart",
+        "层级结构",
+        "横向延展",
+        "深色背景",
+        "蓝主色",
+        "中对比",
+        "中心聚焦",
+        "数据分层",
+        "step progression",
+        "categoryField",
+        "valueField"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "倒梯形纵向层级结构",
+        "横向延展的漏斗形态",
+        "多层颜色渐变（蓝→青→紫→灰→绿）",
+        "每层标注StepX及数值",
+        "底部尖端收束强调终点",
+        "深色背景突出图形对比"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "scatter_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "VChartLine",
+      "title": "折线图-VChart",
+      "category": "Lines",
+      "contentType": "line_chart",
+      "visualForm": "line_chart",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "折线图",
+        "趋势图",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "中心聚焦",
+        "数据趋势",
+        "xField",
+        "yField",
+        "dataset",
+        "VChart",
+        "横向延展"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与高对比度数据线形成视觉焦点",
+        "双系列折线（蓝+青）并列展示",
+        "X轴为分类标签（Nail polish, Rouge, Eyeshadows）",
+        "Y轴数值轴带刻度线与网格线",
+        "底部图例明确标注数据系列",
+        "无柱状/面积填充，纯线条结构"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "area_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "pie_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar"
+      ]
+    },
+    {
+      "componentId": "VChartPercentArea",
+      "title": "VChart百分比面积图",
+      "category": "Areas",
+      "contentType": "area_chart",
+      "visualForm": "area_chart",
+      "layout": "centered",
+      "semanticKeywords": [
+        "百分比",
+        "面积图",
+        "趋势",
+        "深色背景",
+        "蓝青主色",
+        "低对比",
+        "中心聚焦",
+        "VChart",
+        "dataset",
+        "xField",
+        "yField",
+        "分区布局"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色渐变背景与蓝青系线条的低对比配色",
+        "面积填充+折线叠加的复合形态",
+        "底部横向分类轴（category axis）带标签",
+        "Y轴为0-1比例刻度（典型百分比/占比场景）",
+        "数据以dataset形式绑定，支持多系列（China/USA）",
+        "无柱状/饼状等其他图形元素，纯面积趋势表达"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "funnel_chart",
+        "scatter_chart",
+        "metric_card",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "VChartPie",
+      "title": "饼图多欢-VChart",
+      "category": "Pies",
+      "contentType": "pie_chart",
+      "visualForm": "donut_pie",
+      "layout": "centered",
+      "semanticKeywords": [
+        "饼图",
+        "环形图",
+        "多欢",
+        "VChart",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "分区布局",
+        "中心聚焦",
+        "占比结构",
+        "dataset",
+        "categoryField",
+        "valueField"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "环形占比结构（非实心饼图）",
+        "深色背景 + 蓝/青/绿等冷色调主色",
+        "元素简洁、无标签/图例外显",
+        "中心留白，视觉聚焦于环形分区",
+        "双层同心圆辅助线增强科技感",
+        "支持主配置type/dataset/categoryField/valueField的典型VChart风格"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "wordcloud",
+        "table_grid",
+        "liquid_vertical_bar",
+        "border_frame"
+      ]
+    },
+    {
+      "componentId": "VChartScatter",
+      "title": "散点图-VChart",
+      "category": "Scatters",
+      "contentType": "scatter_chart",
+      "visualForm": "scatter_plot",
+      "layout": "horizontal",
+      "semanticKeywords": [
+        "散点图",
+        "VChart",
+        "蓝主色",
+        "深色背景",
+        "点状分布",
+        "横向延展",
+        "信息密集",
+        "中心聚焦",
+        "dataset数据源",
+        "xField配置"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝/青渐变点的低对比度视觉风格",
+        "横向延展布局，X轴为数值刻度且占据主要宽度",
+        "点状结构为主，无连接线或面积填充",
+        "底部带X轴刻度标签与图例（4/6/3/5）",
+        "强调数据点分布密度与聚类特征"
+      ],
+      "negativeMatches": [
+        "line_chart",
+        "bar_chart",
+        "area_chart",
+        "pie_chart",
+        "map",
+        "funnel_chart",
+        "wordcloud",
+        "metric_card"
+      ]
+    },
+    {
+      "componentId": "VChartWordCloud",
+      "title": "词云图-VChart",
+      "category": "WordClouds",
+      "contentType": "wordcloud",
+      "visualForm": "wordcloud_grid",
+      "layout": "centered",
+      "semanticKeywords": [
+        "词云图",
+        "文字密度",
+        "视觉聚焦",
+        "深色背景",
+        "蓝主色",
+        "横向延展",
+        "数据可视化",
+        "VChart",
+        "词块聚合",
+        "信息中密",
+        "低对比度",
+        "nameField",
+        "valueField"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "深色背景与蓝色系主色调的组合",
+        "词块按大小与颜色强度分布，形成中心聚焦的视觉层次",
+        "横向延展布局，非圆形/环形结构",
+        "无坐标轴或网格线，纯文本聚合形态",
+        "依赖dataset配置，以nameField/valueField定义词与权重"
+      ],
+      "negativeMatches": [
+        "pie_chart",
+        "bar_chart",
+        "line_chart",
+        "scatter_chart",
+        "funnel_chart",
+        "metric_card",
+        "table",
+        "map",
+        "border",
+        "decorate"
+      ]
+    },
+    {
+      "componentId": "WaterPolo",
+      "title": "水球图",
+      "category": "Mores",
+      "contentType": "chart",
+      "visualForm": "liquid_wavy_circle",
+      "layout": "centered",
+      "semanticKeywords": [
+        "水球图",
+        "液态进度",
+        "波浪填充",
+        "百分比可视化",
+        "深色背景",
+        "蓝青渐变",
+        "中心聚焦",
+        "数据占比",
+        "动态水纹",
+        "综合信息"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "圆形容器内含波浪形分界线，上下区域使用不同色阶渐变；数值居中显示于波浪线上方；整体为单值占比表达，非多系列对比；无坐标轴或刻度；强调视觉流动感与水体意象"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "area_chart",
+        "pie_chart",
+        "funnel_chart",
+        "metric_card",
+        "table",
+        "map"
+      ]
+    },
+    {
+      "componentId": "WordCloud",
+      "title": "词云",
+      "category": "Mores",
+      "contentType": "wordcloud",
+      "visualForm": "text_density_cloud",
+      "layout": "centered",
+      "semanticKeywords": [
+        "词云",
+        "文字密度",
+        "视觉焦点",
+        "数据词频",
+        "深色背景",
+        "蓝主色",
+        "低对比",
+        "信息结构",
+        "dataset",
+        "tooltip",
+        "series",
+        "数据入口"
+      ],
+      "source": "vlm",
+      "distinguishingFeatures": [
+        "以文字大小/颜色体现数据权重的非几何图形",
+        "无明确坐标轴或网格线",
+        "整体呈不规则聚类分布，中心聚焦",
+        "背景深色+主色蓝，强调文字本身",
+        "依赖dataset中text与value字段构建"
+      ],
+      "negativeMatches": [
+        "bar_chart",
+        "line_chart",
+        "pie_chart",
+        "table",
+        "map",
+        "metric_card",
+        "chart"
+      ]
+    }
+  ]
+}

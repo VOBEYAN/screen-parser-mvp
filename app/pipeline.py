@@ -13,6 +13,7 @@ from .matcher import ComponentMatcher
 from .multimodal_classifier import MultimodalComponentClassifier
 from .overlap import OverlapDetector
 from .reporter import ReportWriter
+from .schema_hydrator import build_ai_schema_components
 from .visual_matcher import VisualReferenceLibrary
 
 
@@ -22,6 +23,7 @@ class ScreenParser:
         catalog_path: str,
         artifact_root: str = "artifacts",
         yolo_model: Optional[str] = None,
+        yolo_conf: Optional[float] = None,
         graph_model: Optional[str] = None,
         reference_library: Optional[str] = None,
         multimodal_classifier: bool = False,
@@ -31,12 +33,17 @@ class ScreenParser:
     ):
         self.catalog_path = catalog_path
         self.artifact_root = artifact_root
-        self.detector = build_detector(yolo_model)
+        self.detector = build_detector(yolo_model, conf_threshold=yolo_conf)
         self.library = ComponentLibrary.from_catalog(catalog_path)
         self.reference_library_path = self._resolve_reference_library(reference_library)
         self.visual_library = VisualReferenceLibrary.from_path(self.reference_library_path)
-        self.hierarchy = GraphHierarchyParser(graph_model) if graph_model else HierarchyParser()
-        self.hierarchyMode = "graph_transformer" if graph_model else "rules"
+        graph_model_path = Path(graph_model) if graph_model else None
+        if graph_model_path and graph_model_path.exists():
+            self.hierarchy = GraphHierarchyParser(str(graph_model_path))
+            self.hierarchyMode = "graph_transformer"
+        else:
+            self.hierarchy = HierarchyParser()
+            self.hierarchyMode = "rules_missing_graph_model" if graph_model else "rules"
         self.overlap = OverlapDetector()
         self.matcher = ComponentMatcher(self.library, self.visual_library)
         self.multimodal_classifier = MultimodalComponentClassifier.from_env(
@@ -45,17 +52,34 @@ class ScreenParser:
             model=multimodal_model,
             base_url=multimodal_base_url,
             api_key=multimodal_api_key,
+            visual_library=self.visual_library,
         )
         self.reporter = ReportWriter(artifact_root)
 
-    def parse(self, image_path: str, input_type: str = "design", top_k: int = 1) -> Dict[str, str]:
+    def parse(
+        self,
+        image_path: str,
+        input_type: str = "design",
+        top_k: int = 1,
+        multimodal_model: Optional[str] = None,
+        multimodal_base_url: Optional[str] = None,
+        multimodal_api_key: Optional[str] = None,
+        force_llm: Optional[bool] = None,
+    ) -> Dict[str, str]:
         image = Image.open(image_path)
         image_size = image.size
 
         detections = self.detector.detect(image_path)
         nodes, relations = self.hierarchy.parse(detections, image_size[0], image_size[1])
         self.matcher.match_nodes(nodes, top_k=top_k, image_path=image_path)
-        classifier_summary = self.multimodal_classifier.refine_nodes(nodes, image_path=image_path, top_k=top_k)
+        request_classifier = self.multimodal_classifier.for_request(
+            model=multimodal_model,
+            base_url=multimodal_base_url,
+            api_key=multimodal_api_key,
+            force_llm=force_llm,
+        )
+        classifier_summary = request_classifier.refine_nodes(nodes, image_path=image_path, top_k=top_k)
+        ai_schema_components = build_ai_schema_components(nodes, self.library, classifier_summary=classifier_summary)
         overlaps = self.overlap.detect(nodes)
 
         artifacts = self.reporter.write(
@@ -65,7 +89,10 @@ class ScreenParser:
             nodes=nodes,
             relations=relations,
             overlaps=overlaps,
-            extras={"contentClassifier": classifier_summary},
+            extras={
+                "contentClassifier": classifier_summary,
+                "aiSchemaComponents": ai_schema_components,
+            },
         )
         artifacts["inputType"] = input_type
         artifacts["componentCount"] = str(max(0, len(nodes) - 1))

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Screen Parser Studio</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="side">
+      <div class="brand">
+        <div class="brand-mark">SP</div>
+        <div>
+          <strong>Screen Parser</strong>
+          <span>组件检测工作台</span>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="主导航">
+        <a href="#workspace" class="active">解析工作区</a>
+        <a href="#components">组件匹配</a>
+        <a href="#hierarchy">层级结构</a>
+        <a href="#history">历史记录</a>
+        <a href="#reconstructed">还原大屏</a>
+      </nav>
+
+      <section class="side-section">
+        <h2>服务状态</h2>
+        <dl id="statusList" class="status-list">
+          <div><dt>Detector</dt><dd>加载中</dd></div>
+          <div><dt>Hierarchy</dt><dd>加载中</dd></div>
+          <div><dt>Matcher</dt><dd>加载中</dd></div>
+        </dl>
+      </section>
+
+      <section class="side-section history-mini" id="history">
+        <div class="section-head">
+          <h2>最近运行</h2>
+          <button class="text-button" type="button" id="refreshRunsBtn">刷新</button>
+        </div>
+        <div id="runList" class="run-list empty">暂无历史结果</div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">大屏图纸组件检测与组件库匹配 MVP</p>
+          <h1>从设计稿到结构化组件清单</h1>
+        </div>
+        <div class="top-actions">
+          <button class="ghost-button" type="button" id="themeBtn">切换主题</button>
+          <a class="ghost-button" href="/api/status" target="_blank" rel="noreferrer">状态 JSON</a>
+        </div>
+      </header>
+
+      <section class="upload-band" id="workspace">
+        <form id="parseForm" class="upload-form">
+          <label id="dropZone" class="drop-zone">
+            <input id="imageInput" name="image" type="file" accept="image/*" required />
+            <span class="drop-kicker">拖入或选择图片</span>
+            <strong id="fileName">上传大屏设计稿、截图或草图</strong>
+            <small>支持 PNG / JPG / WEBP / BMP，解析完成后会生成证据图、报告和 JSON。</small>
+          </label>
+
+          <div class="control-grid">
+            <label class="field">
+              <span>输入类型</span>
+              <select name="inputType">
+                <option value="design">高保真设计稿</option>
+                <option value="sketch">草图 / 低保真图</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Top-K 候选</span>
+              <input id="topKInput" name="topK" type="range" value="8" min="1" max="12" />
+              <b id="topKValue">8</b>
+            </label>
+            <button id="parseBtn" class="primary-button" type="submit">开始解析</button>
+          </div>
+        </form>
+
+        <div class="preview-strip">
+          <img id="localPreview" alt="本地预览" />
+          <div>
+            <strong id="previewTitle">等待输入</strong>
+            <span id="previewMeta">选择图片后会先在这里预览。</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="progress-band" id="progressBand" hidden>
+        <div class="progress-track"><span id="progressFill"></span></div>
+        <div class="progress-steps">
+          <span class="active">上传</span>
+          <span>检测</span>
+          <span>层级解析</span>
+          <span>组件匹配</span>
+          <span>报告生成</span>
+        </div>
+      </section>
+
+      <section class="metrics-grid" id="metricsGrid">
+        <article><span>组件节点</span><strong id="metricNodes">0</strong></article>
+        <article><span>检测框</span><strong id="metricDetections">0</strong></article>
+        <article><span>异常重叠</span><strong id="metricOverlaps">0</strong></article>
+        <article><span>大模型调用</span><strong id="metricLlmCalls">0</strong></article>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="visual-panel">
+          <div class="panel-toolbar">
+            <div class="segmented" role="tablist" aria-label="图像视图">
+              <button type="button" class="active" data-image-mode="evidence">证据图</button>
+              <button type="button" data-image-mode="source">原图</button>
+            </div>
+            <div class="zoom-tools">
+              <button type="button" data-zoom="out">-</button>
+              <span id="zoomLabel">100%</span>
+              <button type="button" data-zoom="in">+</button>
+              <button type="button" data-zoom="reset">适配</button>
+            </div>
+          </div>
+
+          <div id="imageStage" class="image-stage empty">
+            <div class="empty-state">
+              <strong>解析结果会显示在这里</strong>
+              <span>证据图可查看检测框；切到原图后可点击框查看节点细节。</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="inspector">
+          <div class="section-head">
+            <h2>节点详情</h2>
+            <button id="clearSelectionBtn" class="text-button" type="button">清空</button>
+          </div>
+          <div id="nodeInspector" class="node-inspector empty">
+            <strong>未选中节点</strong>
+            <span>点击图像上的检测框或表格行查看候选组件、bbox 和判别解释。</span>
+          </div>
+        </aside>
+      </section>
+
+      <section class="analysis-panel" id="components">
+        <div class="panel-toolbar">
+          <div class="tabs" role="tablist" aria-label="结果视图">
+            <button type="button" class="active" data-tab="components">组件清单</button>
+            <button type="button" data-tab="hierarchy">层级树</button>
+            <button type="button" data-tab="overlaps">重叠检查</button>
+            <button type="button" data-tab="report">报告</button>
+            <button type="button" data-tab="json">JSON</button>
+          </div>
+          <div class="result-actions">
+            <input id="nodeSearch" type="search" placeholder="搜索 node / component / title" />
+            <select id="levelFilter">
+              <option value="">全部层级</option>
+            </select>
+            <select id="typeFilter">
+              <option value="">全部类型</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="componentSummary" class="component-summary"></div>
+
+        <div class="tab-view active" data-view="components">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>节点</th>
+                  <th>类型</th>
+                  <th>候选组件</th>
+                  <th>标题</th>
+                  <th>得分</th>
+                  <th>内容判别</th>
+                  <th>置信度</th>
+                  <th>BBox</th>
+                </tr>
+              </thead>
+              <tbody id="componentsBody">
+                <tr><td colspan="8">暂无解析结果</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-view" data-view="hierarchy" id="hierarchy">
+          <div id="hierarchyTree" class="hierarchy-tree empty">暂无层级数据</div>
+        </div>
+
+        <div class="tab-view" data-view="overlaps">
+          <div id="overlapPanel" class="overlap-panel empty">暂无重叠问题</div>
+        </div>
+
+        <div class="tab-view" data-view="report">
+          <div id="reportPanel" class="report-panel empty">暂无报告</div>
+        </div>
+
+        <div class="tab-view" data-view="json">
+          <div class="json-head">
+            <button id="copyJsonBtn" class="ghost-button" type="button">复制 JSON</button>
+          </div>
+          <pre id="jsonOutput">暂无 JSON</pre>
+        </div>
+      </section>
+
+      <section class="reconstruct-panel" id="reconstructed">
+        <div class="panel-toolbar">
+          <div>
+            <h2>还原大屏</h2>
+            <p>把 OCR / 大模型识别的数据灌入 ai-schema-view 对应组件参数，并渲染真实的 95 类前端组件。</p>
+          </div>
+          <div class="result-actions">
+            <button class="ghost-button" type="button" id="copySchemaBtn">复制组件 JSON</button>
+            <a class="ghost-button" id="openSchemaRenderBtn" href="http://localhost:3020/ai-schema/#/schema-render" target="_blank" rel="noreferrer">新窗口打开</a>
+          </div>
+        </div>
+        <div id="schemaCanvas" class="schema-canvas empty">
+          <div class="empty-state">
+            <strong>暂无还原组件</strong>
+            <span>上传图片解析后，这里会显示可落到 ai-schema-view 的组件列表。</span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="hitPicker" class="hit-picker" hidden></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

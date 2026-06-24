@@ -7,11 +7,11 @@ import torch
 import torch.nn.functional as F
 
 from .graph_transformer import GraphTransformerHierarchyModel
-from .hierarchy import TYPE_LEVEL, normalize_node_type, parent_score
+from .hierarchy import CONTENT_CHILD_TYPES, TYPE_LEVEL, insert_region_nodes, normalize_node_type, parent_score, union_bbox
 from .schemas import BBox, Detection, Node, Relation
 
 
-TYPE_NAMES = ["Screen", "Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"]
+TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
 TYPE_TO_ID = {name: idx for idx, name in enumerate(TYPE_NAMES)}
 
 
@@ -52,6 +52,8 @@ class GraphHierarchyParser:
                 node.level = int(level_id)
 
         self._assign_graph_parents(nodes, parent_probs)
+        insert_region_nodes(nodes, image_width, image_height)
+        self._insert_content_nodes(nodes)
         relations = self._build_relations(nodes)
         return nodes, relations
 
@@ -100,6 +102,32 @@ class GraphHierarchyParser:
                     best_score = score
                     best_index = parent_index
             child.parent_id = nodes[best_index].node_id
+
+    def _insert_content_nodes(self, nodes: List[Node]) -> None:
+        next_index = 0
+        parents = [node for node in list(nodes) if node.type in {"Panel", "Border"}]
+        for parent in parents:
+            children = [
+                node
+                for node in nodes
+                if node.parent_id == parent.node_id and node.type in CONTENT_CHILD_TYPES
+            ]
+            if not children:
+                continue
+            content = Node(
+                node_id=f"content_{next_index:04d}",
+                bbox=union_bbox([node.bbox for node in children], pad=4.0),
+                type="Content",
+                level=3,
+                confidence=round(sum(node.confidence for node in children) / max(len(children), 1), 4),
+                parent_id=parent.node_id,
+                features={"generated": True, "childCount": len(children)},
+            )
+            next_index += 1
+            nodes.append(content)
+            for child in children:
+                child.parent_id = content.node_id
+                child.level = max(child.level, 4)
 
     def _build_relations(self, nodes: List[Node]) -> List[Relation]:
         relations: List[Relation] = []

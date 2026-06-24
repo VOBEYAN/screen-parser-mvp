@@ -21,8 +21,8 @@ def main() -> None:
     parser.add_argument("--catalog", default=str(ROOT.parent / "ai-schema-view" / "schema-md" / "catalog.md"))
     parser.add_argument("--artifacts", default=str(ROOT / "artifacts" / "eval_runs"))
     parser.add_argument("--out", default=str(ROOT / "artifacts" / "evaluation"))
-    parser.add_argument("--yolo-model", default=str(ROOT / "models" / "yolo_screen_components_demo.pt"))
-    parser.add_argument("--graph-model", default=str(ROOT / "models" / "graph_transformer_demo.pt"))
+    parser.add_argument("--yolo-model", default=str(ROOT / "models" / "yolo_screen_structure_local_v1.pt"))
+    parser.add_argument("--graph-model", default=str(ROOT / "models" / "graph_transformer_structure_local_v1.pt"))
     parser.add_argument("--iou-threshold", type=float, default=0.5)
     parser.add_argument("--limit", type=int, default=0)
     args = parser.parse_args()
@@ -135,4 +135,3 @@ def markdown(summary: dict) -> str:
 
 if __name__ == "__main__":
     main()
-

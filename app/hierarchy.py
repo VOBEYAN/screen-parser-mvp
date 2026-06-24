@@ -13,6 +13,7 @@ TYPE_LEVEL = {
     "Panel": 2,
     "Border": 3,
     "Title": 3,
+    "Content": 3,
     "Decorate": 3,
     "Filter": 4,
     "Chart": 4,
@@ -22,11 +23,15 @@ TYPE_LEVEL = {
 }
 
 COMPATIBILITY = {
-    "Screen": {"Region", "Panel", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Region": {"Panel", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Panel": {"Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Border": {"Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Screen": {"Region", "Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Region": {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Panel": {"Border", "Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Border": {"Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Content": {"Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
 }
+
+CONTENT_CHILD_TYPES = {"Chart", "Table", "Map", "MetricCard", "Filter"}
+REGION_CHILD_TYPES = {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"}
 
 
 class HierarchyParser:
@@ -59,6 +64,8 @@ class HierarchyParser:
 
         self._promote_container_nodes(nodes)
         self._assign_parents(nodes)
+        insert_region_nodes(nodes, image_width, image_height)
+        self._insert_content_nodes(nodes)
         relations = self._build_relations(nodes)
         return nodes, relations
 
@@ -97,6 +104,33 @@ class HierarchyParser:
             child.parent_id = best_parent.node_id if best_parent and best_score >= 0.42 else "screen_0000"
             if child.parent_id == "screen_0000" and child.level > 2:
                 child.level = max(2, child.level - 1)
+
+    def _insert_content_nodes(self, nodes: List[Node]) -> None:
+        next_index = sum(1 for node in nodes if node.node_id.startswith("content_"))
+        parents = [node for node in list(nodes) if node.type in {"Panel", "Border"}]
+        for parent in parents:
+            children = [
+                node
+                for node in nodes
+                if node.parent_id == parent.node_id and node.type in CONTENT_CHILD_TYPES
+            ]
+            if not children:
+                continue
+            content_bbox = union_bbox([node.bbox for node in children], pad=4.0)
+            content = Node(
+                node_id=f"content_{next_index:04d}",
+                bbox=content_bbox,
+                type="Content",
+                level=3,
+                confidence=round(sum(node.confidence for node in children) / max(len(children), 1), 4),
+                parent_id=parent.node_id,
+                features={"generated": True, "childCount": len(children)},
+            )
+            next_index += 1
+            nodes.append(content)
+            for child in children:
+                child.parent_id = content.node_id
+                child.level = max(child.level, 4)
 
     def _build_relations(self, nodes: List[Node]) -> List[Relation]:
         relations: List[Relation] = []
@@ -155,6 +189,8 @@ def normalize_node_type(class_name: str) -> str:
         return "Title"
     if "border" in lower:
         return "Border"
+    if "content" in lower:
+        return "Content"
     if "panel" in lower or "region" in lower:
         return "Panel"
     if "metric" in lower or "number" in lower:
@@ -162,3 +198,88 @@ def normalize_node_type(class_name: str) -> str:
     if "chart" in lower or "bar" in lower or "line" in lower or "pie" in lower:
         return "Chart"
     return "Decorate"
+
+
+def insert_region_nodes(nodes: List[Node], image_width: int, image_height: int) -> None:
+    if any(node.type == "Region" for node in nodes):
+        return
+
+    screen_children = [
+        node
+        for node in nodes
+        if node.parent_id == "screen_0000" and node.type in REGION_CHILD_TYPES
+    ]
+    if not screen_children:
+        return
+
+    header_children = [
+        node
+        for node in screen_children
+        if node.type == "Title" and node.bbox.y <= image_height * 0.16
+    ]
+    body_children = [node for node in screen_children if node not in header_children]
+
+    next_index = 0
+    if header_children:
+        header = Node(
+            node_id=f"region_{next_index:04d}",
+            bbox=clamp_bbox(union_bbox([node.bbox for node in header_children], pad=8.0), image_width, image_height),
+            type="Region",
+            level=1,
+            confidence=1.0,
+            parent_id="screen_0000",
+            features={"generated": True, "role": "headerRegion", "childCount": len(header_children)},
+        )
+        next_index += 1
+        nodes.append(header)
+        for child in header_children:
+            child.parent_id = header.node_id
+            child.level = max(child.level, TYPE_LEVEL.get(child.type, child.level))
+
+    groups: Dict[str, List[Node]] = {"left": [], "center": [], "right": []}
+    for child in body_children:
+        center_x, _ = child.bbox.center
+        if center_x < image_width * 0.34:
+            groups["left"].append(child)
+        elif center_x > image_width * 0.66:
+            groups["right"].append(child)
+        else:
+            groups["center"].append(child)
+
+    for role in ["left", "center", "right"]:
+        children = groups[role]
+        if not children:
+            continue
+        region = Node(
+            node_id=f"region_{next_index:04d}",
+            bbox=clamp_bbox(union_bbox([node.bbox for node in children], pad=8.0), image_width, image_height),
+            type="Region",
+            level=1,
+            confidence=round(sum(node.confidence for node in children) / max(len(children), 1), 4),
+            parent_id="screen_0000",
+            features={"generated": True, "role": f"{role}Region", "childCount": len(children)},
+        )
+        next_index += 1
+        nodes.append(region)
+        for child in children:
+            child.parent_id = region.node_id
+            if child.type in {"Panel", "Border"}:
+                child.level = 2
+
+
+def clamp_bbox(bbox: BBox, image_width: int, image_height: int) -> BBox:
+    x1 = max(0.0, min(float(image_width - 1), bbox.x))
+    y1 = max(0.0, min(float(image_height - 1), bbox.y))
+    x2 = max(x1 + 1.0, min(float(image_width), bbox.right))
+    y2 = max(y1 + 1.0, min(float(image_height), bbox.bottom))
+    return BBox(x1, y1, x2 - x1, y2 - y1)
+
+
+def union_bbox(boxes: List[BBox], pad: float = 0.0) -> BBox:
+    if not boxes:
+        return BBox(0.0, 0.0, 1.0, 1.0)
+    x1 = min(box.x for box in boxes) - pad
+    y1 = min(box.y for box in boxes) - pad
+    x2 = max(box.right for box in boxes) + pad
+    y2 = max(box.bottom for box in boxes) + pad
+    return BBox(x1, y1, max(1.0, x2 - x1), max(1.0, y2 - y1))

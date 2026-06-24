@@ -1,16 +1,16 @@
 {
   "catalogPath": "../ai-schema-view/schema-md/catalog.md",
   "artifactRoot": "artifacts",
-  "yoloModel": "models/yolo_screen_components_demo.pt",
-  "graphModel": "models/graph_transformer_demo.pt",
+  "yoloModel": "models/yolo_screen_structure_chart_hard_v3.pt",
+  "graphModel": "models/graph_transformer_structure_local_v1.pt",
   "referenceLibrary": "data/component-reference",
-  "topK": 1,
+  "topK": 5,
   "multimodalClassifier": true,
-  "multimodalModel": "deepseek-v4-flash",
-  "multimodalBaseUrl": "https://api.deepseek.com/v4",
+  "multimodalModel": "your-vision-model",
+  "multimodalBaseUrl": "https://your-openai-compatible-endpoint/v1",
   "env": {
-    "SCREEN_PARSER_VLM_API_KEY": "sk-be1cf649db9548abb3b294e710efb774",
-    "SCREEN_PARSER_VLM_MODEL": "deepseek-v4-flash",
-    "SCREEN_PARSER_VLM_BASE_URL": "https://api.deepseek.com/v4"
+    "SCREEN_PARSER_VLM_API_KEY": "your-api-key",
+    "SCREEN_PARSER_VLM_MODEL": "your-vision-model",
+    "SCREEN_PARSER_VLM_BASE_URL": "https://your-openai-compatible-endpoint/v1"
   }
 }

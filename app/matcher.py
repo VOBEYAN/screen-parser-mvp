@@ -18,6 +18,7 @@ TYPE_TO_CATEGORIES = {
     "Filter": ["Inputs"],
     "Decorate": ["Decorates", "Mores"],
 }
+STRUCTURE_ONLY_TYPES = {"Screen", "Region", "Content"}
 
 class ComponentMatcher:
     def __init__(self, library: ComponentLibrary, visual_library: Optional[VisualReferenceLibrary] = None):
@@ -27,7 +28,7 @@ class ComponentMatcher:
     def match_nodes(self, nodes: Iterable[Node], top_k: int = 5, image_path: Optional[str] = None) -> None:
         image = load_bgr_image(image_path) if image_path and self.visual_library.enabled else None
         for node in nodes:
-            if node.type == "Screen":
+            if node.type in STRUCTURE_ONLY_TYPES:
                 continue
             crop_features = extract_crop_features(image, node.bbox) if image is not None else None
             candidates = self.match_node(node, top_k=top_k, crop_features=crop_features)

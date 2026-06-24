@@ -17,14 +17,14 @@ sys.path.insert(0, str(ROOT))
 from app.graph_transformer import GraphTransformerHierarchyModel
 
 
-TYPE_NAMES = ["Screen", "Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"]
+TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
 TYPE_TO_ID = {name: idx for idx, name in enumerate(TYPE_NAMES)}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train Graph Transformer on synthetic hierarchy metadata.")
-    parser.add_argument("--data", default=str(ROOT / "data" / "synthetic"), help="Synthetic dataset root.")
-    parser.add_argument("--out", default=str(ROOT / "models" / "graph_transformer.pt"))
+    parser.add_argument("--data", default=str(ROOT / "data" / "screen-structure-v1"), help="Composited structure dataset root.")
+    parser.add_argument("--out", default=str(ROOT / "models" / "graph_transformer_structure_v1.pt"))
     parser.add_argument("--epochs", type=int, default=8)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--hidden-dim", type=int, default=96)

@@ -20,7 +20,8 @@ from app.component_library import ComponentLibrary
 from app.schemas import BBox, ComponentRecord
 
 
-COARSE_CLASSES = ["Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"]
+DETECTION_CLASSES = ["Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"]
+STRUCTURE_NODE_TYPES = ["Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
 CHART_CATEGORIES = {"Bars", "Lines", "Pies", "Scatters", "Areas", "Funnels", "WordClouds", "FlowChart"}
 TITLE_CATEGORIES = {"Title", "Texts"}
 TABLE_CATEGORIES = {"Tables"}
@@ -30,8 +31,11 @@ DECORATE_CATEGORIES = {"Decorates"}
 SCREEN_TITLE_TEXTS = [
     "联通服务展示大屏",
     "智能监管检测系统大屏",
+    "智能密码监管检测系统大屏",
     "数据可视化运营驾驶舱",
     "业务态势分析大屏",
+    "智能中台",
+    "智能底座",
 ]
 PANEL_TITLE_TEXTS = [
     "服务分布",
@@ -82,6 +86,7 @@ def main() -> None:
     parser.add_argument("--title-placement-mode", choices=["center", "diverse"], default="diverse")
     parser.add_argument("--overlay-rate", type=float, default=0.35)
     parser.add_argument("--content-hints", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--hard-chart-rate", type=float, default=0.0)
     parser.add_argument("--seed", type=int, default=20260609)
     parser.add_argument("--clean", action="store_true")
     args = parser.parse_args()
@@ -114,6 +119,7 @@ def main() -> None:
         title_placement_mode=args.title_placement_mode,
         overlay_rate=args.overlay_rate,
         content_hints=args.content_hints,
+        hard_chart_rate=args.hard_chart_rate,
         class_to_id=class_to_id,
         rng=random.Random(rng.randint(1, 10**9)),
     )
@@ -131,6 +137,7 @@ def main() -> None:
         title_placement_mode=args.title_placement_mode,
         overlay_rate=args.overlay_rate,
         content_hints=args.content_hints,
+        hard_chart_rate=args.hard_chart_rate,
         class_to_id=class_to_id,
         rng=random.Random(rng.randint(1, 10**9)),
     )
@@ -147,7 +154,9 @@ def main() -> None:
         "titlePlacementMode": args.title_placement_mode,
         "overlayRate": args.overlay_rate,
         "contentHints": args.content_hints,
-        "coarseClasses": COARSE_CLASSES,
+        "hardChartRate": args.hard_chart_rate,
+        "coarseClasses": DETECTION_CLASSES,
+        "structureNodeTypes": STRUCTURE_NODE_TYPES,
         "classes": classes,
         "componentCount": len(assets),
         "train": train_summary,
@@ -203,7 +212,7 @@ def build_assets(records: Iterable[ComponentRecord], reference_paths: Dict[str, 
 
 def build_classes(label_mode: str, assets: List[ComponentAsset]) -> List[str]:
     if label_mode == "coarse":
-        return list(COARSE_CLASSES)
+        return list(DETECTION_CLASSES)
     return [asset.record.key for asset in assets]
 
 
@@ -221,10 +230,12 @@ def generate_split(
     title_placement_mode: str,
     overlay_rate: float,
     content_hints: bool,
+    hard_chart_rate: float,
     class_to_id: Dict[str, int],
     rng: random.Random,
 ) -> Dict[str, object]:
-    class_counts = {name: 0 for name in COARSE_CLASSES}
+    class_counts = {name: 0 for name in DETECTION_CLASSES}
+    node_type_counts = {name: 0 for name in STRUCTURE_NODE_TYPES}
     component_counts = {asset.record.key: 0 for asset in assets}
     stream = component_stream(assets, screen_count * components_per_screen, rng)
     overlay_stream = overlay_component_stream(stream, assets, rng)
@@ -234,6 +245,7 @@ def generate_split(
     title_assets = [asset for asset in assets if asset.coarse_type == "Title"]
     border_assets = [asset for asset in assets if asset.coarse_type == "Border"]
     decorate_assets = [asset for asset in assets if asset.coarse_type == "Decorate"]
+    chart_assets = [asset for asset in assets if asset.coarse_type == "Chart"]
 
     for screen_index in range(screen_count):
         selected = stream[cursor : cursor + components_per_screen]
@@ -245,6 +257,7 @@ def generate_split(
             title_assets=title_assets,
             border_assets=border_assets,
             decorate_assets=decorate_assets,
+            chart_assets=chart_assets,
             width=width,
             height=height,
             label_mode=label_mode,
@@ -252,6 +265,7 @@ def generate_split(
             title_placement_mode=title_placement_mode,
             overlay_rate=overlay_rate,
             content_hints=content_hints,
+            hard_chart_rate=hard_chart_rate,
             class_to_id=class_to_id,
             rng=rng,
         )
@@ -259,7 +273,7 @@ def generate_split(
         save_sample(out, split, stem, image, labels, meta)
         draw_preview(image, meta, out / "preview" / f"{stem}.png")
         image_count += 1
-        update_counts(meta, class_counts, component_counts)
+        update_counts(meta, class_counts, component_counts, node_type_counts)
 
         if include_sketch:
             sketch = to_sketch(image)
@@ -270,7 +284,7 @@ def generate_split(
             if screen_index < 3:
                 draw_preview(sketch, sketch_meta, out / "preview" / f"{sketch_stem}.png")
             image_count += 1
-            update_counts(sketch_meta, class_counts, component_counts)
+            update_counts(sketch_meta, class_counts, component_counts, node_type_counts)
 
     covered = [key for key, count in component_counts.items() if count > 0]
     missing = [key for key, count in component_counts.items() if count == 0]
@@ -279,6 +293,7 @@ def generate_split(
         "imageCount": image_count,
         "includeSketch": include_sketch,
         "classCounts": class_counts,
+        "nodeTypeCounts": node_type_counts,
         "coveredComponentCount": len(covered),
         "missingComponentCount": len(missing),
         "missingComponents": missing,
@@ -312,12 +327,38 @@ def overlay_component_stream(primary_stream: List[ComponentAsset], assets: List[
     return stream
 
 
+def choose_bar_chart_asset(chart_assets: List[ComponentAsset], rng: random.Random) -> ComponentAsset:
+    bar_assets = [
+        asset
+        for asset in chart_assets
+        if asset.record.category == "Bars" or "bar" in asset.record.key.lower() or "柱" in asset.record.title
+    ]
+    return rng.choice(bar_assets or chart_assets)
+
+
+def should_force_hard_chart(slot: BBox, image_width: int, hard_chart_rate: float, rng: random.Random) -> bool:
+    if hard_chart_rate <= 0:
+        return False
+    side_slot = slot.x < image_width * 0.32 or slot.right > image_width * 0.68
+    tall_enough = slot.h >= 105 and slot.w >= 150
+    return side_slot and tall_enough and rng.random() < max(0.0, min(1.0, hard_chart_rate))
+
+
+def should_draw_luminous_bar_chart(slot: BBox, image_width: int, hard_chart_rate: float, rng: random.Random) -> bool:
+    if hard_chart_rate <= 0:
+        return False
+    side_slot = slot.x < image_width * 0.32 or slot.right > image_width * 0.68
+    probability = hard_chart_rate if side_slot else hard_chart_rate * 0.35
+    return rng.random() < max(0.0, min(1.0, probability))
+
+
 def generate_one(
     selected: List[ComponentAsset],
     overlay_selected: List[ComponentAsset],
     title_assets: List[ComponentAsset],
     border_assets: List[ComponentAsset],
     decorate_assets: List[ComponentAsset],
+    chart_assets: List[ComponentAsset],
     width: int,
     height: int,
     label_mode: str,
@@ -325,6 +366,7 @@ def generate_one(
     title_placement_mode: str,
     overlay_rate: float,
     content_hints: bool,
+    hard_chart_rate: float,
     class_to_id: Dict[str, int],
     rng: random.Random,
 ) -> Tuple[Image.Image, List[str], Dict[str, object]]:
@@ -333,14 +375,31 @@ def generate_one(
     labels: List[str] = []
     nodes: List[Dict[str, object]] = []
 
-    title_box = screen_title_box(width, height, title_placement_mode, rng)
+    screen_title_style = "tech_banner" if title_placement_mode == "diverse" and rng.random() < 0.58 else "classic"
+    title_box = tech_screen_title_box(width, height, rng) if screen_title_style == "tech_banner" else screen_title_box(width, height, title_placement_mode, rng)
+    header_region_id = "region_header"
+    add_synthetic_node(
+        nodes,
+        labels,
+        header_region_id,
+        "screen_0000",
+        "Region",
+        header_region_box(title_box, width, height),
+        width,
+        height,
+        None,
+        label_mode,
+        class_to_id,
+        role="headerRegion",
+        emit_label=False,
+    )
     screen_title_text = rng.choice(SCREEN_TITLE_TEXTS)
-    draw_rendered_title(draw, title_box, screen_title_text, rng, prominent=True)
+    draw_rendered_title(draw, title_box, screen_title_text, rng, prominent=True, style=screen_title_style)
     add_synthetic_node(
         nodes,
         labels,
         "node_title_0000",
-        "screen_0000",
+        header_region_id,
         "Title",
         title_box,
         width,
@@ -353,9 +412,30 @@ def generate_one(
     )
 
     slots = layout_slots(len(selected), width, height, rng, mode=layout_mode)
+    slot_regions = build_slot_regions(slots, width, height)
+    for region in slot_regions:
+        add_synthetic_node(
+            nodes,
+            labels,
+            str(region["nodeId"]),
+            "screen_0000",
+            "Region",
+            region["bbox"],
+            width,
+            height,
+            None,
+            label_mode,
+            class_to_id,
+            role=str(region["role"]),
+            emit_label=False,
+        )
+
     for index, asset in enumerate(selected):
         slot = slots[index]
+        if should_force_hard_chart(slot, width, hard_chart_rate, rng) and chart_assets:
+            asset = choose_bar_chart_asset(chart_assets, rng)
         panel_id = f"panel_{index:04d}"
+        region_id = region_for_slot(slot, slot_regions)
         panel_type = "Border" if border_assets and (label_mode == "component" or rng.random() < 0.55) else "Panel"
         if panel_type == "Border":
             border_asset = rng.choice(border_assets)
@@ -364,7 +444,7 @@ def generate_one(
                 nodes,
                 labels,
                 panel_id,
-                "screen_0000",
+                region_id,
                 "Border",
                 slot,
                 width,
@@ -375,11 +455,12 @@ def generate_one(
             )
         else:
             draw_panel(draw, slot, rng)
-            add_synthetic_node(nodes, labels, panel_id, "screen_0000", "Panel", slot, width, height, None, label_mode, class_to_id)
+            add_synthetic_node(nodes, labels, panel_id, region_id, "Panel", slot, width, height, None, label_mode, class_to_id)
 
         header = panel_title_box(slot, rng, title_placement_mode)
+        header_style = "panel_strip" if header.w >= slot.w * 0.82 else "classic"
         header_text = rng.choice(PANEL_TITLE_TEXTS)
-        draw_rendered_title(draw, header, header_text, rng)
+        draw_rendered_title(draw, header, header_text, rng, style=header_style)
         add_synthetic_node(
             nodes,
             labels,
@@ -397,10 +478,29 @@ def generate_one(
         )
 
         content = content_box_for_slot(slot, header, rng)
+        content_id = f"{panel_id}_content"
+        add_synthetic_node(
+            nodes,
+            labels,
+            content_id,
+            panel_id,
+            "Content",
+            content,
+            width,
+            height,
+            None,
+            label_mode,
+            class_to_id,
+            emit_label=False,
+        )
         pasted_content = paste_asset(image, asset, content, rng, stretch=asset.coarse_type in {"Chart", "Table", "Map", "Border"})
-        add_node(nodes, labels, f"{panel_id}_content", panel_id, asset, pasted_content, width, height, label_mode, class_to_id)
+        add_node(nodes, labels, f"{content_id}_component", content_id, asset, pasted_content, width, height, label_mode, class_to_id)
+        hard_chart_style = asset.coarse_type == "Chart" and should_draw_luminous_bar_chart(slot, width, hard_chart_rate, rng)
         if content_hints:
-            draw_content_hint(draw, pasted_content, asset, rng)
+            if hard_chart_style:
+                draw_luminous_bar_chart_hint(draw, pasted_content, rng)
+            else:
+                draw_content_hint(draw, pasted_content, asset, rng)
 
         if index < len(overlay_selected) and rng.random() < max(0.0, min(1.0, overlay_rate)):
             overlay_asset = overlay_selected[index]
@@ -417,8 +517,8 @@ def generate_one(
             add_node(
                 nodes,
                 labels,
-                f"{panel_id}_overlay",
-                panel_id,
+                f"{content_id}_overlay",
+                content_id,
                 overlay_asset,
                 overlay_bbox,
                 width,
@@ -485,6 +585,79 @@ def screen_title_box(width: int, height: int, mode: str, rng: random.Random) -> 
         BBox(width * 0.18, rng.uniform(46.0, 62.0), width * 0.64, rng.uniform(30.0, 42.0)),
     ]
     return rng.choice(variants)
+
+
+def tech_screen_title_box(width: int, height: int, rng: random.Random) -> BBox:
+    box_w = width * rng.uniform(0.58, 0.70)
+    box_h = rng.uniform(max(28.0, height * 0.055), max(36.0, height * 0.088))
+    x = (width - box_w) / 2.0 + rng.uniform(-width * 0.018, width * 0.018)
+    y = rng.uniform(0.0, max(2.0, height * 0.012))
+    return BBox(x, y, box_w, box_h)
+
+
+def header_region_box(title_box: BBox, width: int, height: int) -> BBox:
+    bottom = min(float(height), max(72.0, title_box.bottom + 14.0))
+    return BBox(0.0, 0.0, float(width), bottom)
+
+
+def build_slot_regions(slots: List[BBox], width: int, height: int) -> List[Dict[str, object]]:
+    groups: Dict[str, List[BBox]] = {"left": [], "center": [], "right": []}
+    for slot in slots:
+        center_x = slot.x + slot.w / 2.0
+        if center_x < width * 0.34:
+            groups["left"].append(slot)
+        elif center_x > width * 0.66:
+            groups["right"].append(slot)
+        else:
+            groups["center"].append(slot)
+
+    roles = {"left": "leftRegion", "center": "centerRegion", "right": "rightRegion"}
+    regions: List[Dict[str, object]] = []
+    for name in ["left", "center", "right"]:
+        boxes = groups[name]
+        if not boxes:
+            continue
+        regions.append(
+            {
+                "nodeId": f"region_{name}",
+                "role": roles[name],
+                "bbox": clamp_bbox(union_boxes(boxes, pad=8.0), width, height),
+            }
+        )
+    return regions
+
+
+def region_for_slot(slot: BBox, regions: List[Dict[str, object]]) -> str:
+    if not regions:
+        return "screen_0000"
+    center_x, center_y = slot.center
+    best_region = regions[0]
+    best_score = float("inf")
+    for region in regions:
+        bbox = region["bbox"]
+        if isinstance(bbox, BBox):
+            inside = bbox.x <= center_x <= bbox.right and bbox.y <= center_y <= bbox.bottom
+            distance = 0.0 if inside else abs((bbox.x + bbox.w / 2.0) - center_x) + abs((bbox.y + bbox.h / 2.0) - center_y)
+            if distance < best_score:
+                best_score = distance
+                best_region = region
+    return str(best_region["nodeId"])
+
+
+def union_boxes(boxes: List[BBox], pad: float = 0.0) -> BBox:
+    x1 = min(box.x for box in boxes) - pad
+    y1 = min(box.y for box in boxes) - pad
+    x2 = max(box.right for box in boxes) + pad
+    y2 = max(box.bottom for box in boxes) + pad
+    return BBox(x1, y1, max(1.0, x2 - x1), max(1.0, y2 - y1))
+
+
+def clamp_bbox(bbox: BBox, width: int, height: int) -> BBox:
+    x1 = max(0.0, min(float(width - 1), bbox.x))
+    y1 = max(0.0, min(float(height - 1), bbox.y))
+    x2 = max(x1 + 1.0, min(float(width), bbox.right))
+    y2 = max(y1 + 1.0, min(float(height), bbox.bottom))
+    return BBox(x1, y1, x2 - x1, y2 - y1)
 
 
 def layout_slots(count: int, width: int, height: int, rng: random.Random, mode: str = "grid") -> List[BBox]:
@@ -567,6 +740,12 @@ def mixed_dashboard_slots(count: int, width: int, height: int, rng: random.Rando
 
 
 def panel_title_box(slot: BBox, rng: random.Random, mode: str = "center") -> BBox:
+    if mode == "diverse" and rng.random() < 0.52:
+        inset = rng.uniform(0.0, 6.0)
+        box_w = max(96.0, slot.w - inset * 2.0)
+        box_h = min(34.0, max(19.0, slot.h * rng.uniform(0.12, 0.18)))
+        return BBox(slot.x + inset, slot.y + rng.uniform(0.0, 7.0), box_w, box_h)
+
     width_ratio = rng.uniform(0.44, 0.78)
     box_w = min(slot.w - 18.0, max(108.0, slot.w * width_ratio))
     box_h = min(34.0, max(22.0, slot.h * rng.uniform(0.14, 0.2)))
@@ -681,7 +860,21 @@ def draw_title_placeholder(draw: ImageDraw.ImageDraw, bbox: BBox) -> None:
     draw.line([bbox.x + 6, bbox.bottom - 5, bbox.right - 6, bbox.bottom - 5], fill=(252, 211, 77, 210), width=2)
 
 
-def draw_rendered_title(draw: ImageDraw.ImageDraw, bbox: BBox, text: str, rng: random.Random, prominent: bool = False) -> None:
+def draw_rendered_title(
+    draw: ImageDraw.ImageDraw,
+    bbox: BBox,
+    text: str,
+    rng: random.Random,
+    prominent: bool = False,
+    style: str = "classic",
+) -> None:
+    if style == "tech_banner":
+        draw_tech_banner_title(draw, bbox, text, rng)
+        return
+    if style == "panel_strip":
+        draw_panel_strip_title(draw, bbox, text, rng)
+        return
+
     fill = rng.choice([(7, 29, 68, 185), (6, 37, 78, 170), (11, 32, 63, 180)])
     outline = rng.choice([(41, 182, 246, 220), (80, 172, 255, 220), (34, 211, 238, 210)])
     accent = rng.choice([(252, 211, 77, 230), (56, 189, 248, 230), (45, 212, 191, 220)])
@@ -704,6 +897,83 @@ def draw_rendered_title(draw: ImageDraw.ImageDraw, bbox: BBox, text: str, rng: r
     for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         draw.text((text_x + dx, text_y + dy), text, font=font, fill=glow)
     draw.text((text_x, text_y), text, font=font, fill=(238, 247, 255, 255))
+
+
+def draw_tech_banner_title(draw: ImageDraw.ImageDraw, bbox: BBox, text: str, rng: random.Random) -> None:
+    x, y, w, h = bbox.x, bbox.y, bbox.w, bbox.h
+    outline = rng.choice([(64, 195, 255, 235), (58, 150, 255, 230), (99, 216, 255, 230)])
+    fill = rng.choice([(10, 54, 132, 215), (12, 63, 147, 205), (8, 45, 116, 215)])
+    dark_fill = rng.choice([(2, 15, 35, 210), (4, 20, 47, 205)])
+    center = [
+        (x + w * 0.30, y + h * 0.18),
+        (x + w * 0.70, y + h * 0.18),
+        (x + w * 0.66, y + h * 0.86),
+        (x + w * 0.50, y + h * 0.98),
+        (x + w * 0.34, y + h * 0.86),
+    ]
+    left = [
+        (x + w * 0.02, y + h * 0.05),
+        (x + w * 0.26, y + h * 0.24),
+        (x + w * 0.30, y + h * 0.78),
+        (x + w * 0.11, y + h * 0.72),
+        (x + w * 0.08, y + h * 0.52),
+        (x, y + h * 0.46),
+    ]
+    right = [(x + w - (px - x), py) for px, py in left]
+    draw.polygon(left, fill=dark_fill, outline=outline)
+    draw.polygon(right, fill=dark_fill, outline=outline)
+    draw.polygon(center, fill=fill, outline=outline)
+    draw.line([x + w * 0.04, y + h * 0.50, x + w * 0.24, y + h * 0.66], fill=(0, 188, 255, 210), width=3)
+    draw.line([x + w * 0.96, y + h * 0.50, x + w * 0.76, y + h * 0.66], fill=(0, 188, 255, 210), width=3)
+    for base_x in [x + w * 0.25, x + w * 0.73]:
+        for index in range(4):
+            x1 = base_x + index * min(10.0, w * 0.012)
+            draw.polygon(
+                [(x1, y + h * 0.48), (x1 + w * 0.012, y + h * 0.50), (x1 + w * 0.018, y + h * 0.60), (x1 + w * 0.006, y + h * 0.58)],
+                fill=(0, 238, 255, 210),
+            )
+
+    font = fit_font(text, max_size=int(max(14, h * 0.48)), max_width=int(max(24, w * 0.44)))
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = text_bbox[2] - text_bbox[0]
+    text_h = text_bbox[3] - text_bbox[1]
+    text_x = x + (w - text_w) / 2.0
+    text_y = y + h * 0.20 + (h * 0.52 - text_h) / 2.0
+    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        draw.text((text_x + dx, text_y + dy), text, font=font, fill=(0, 64, 132, 230))
+    draw.text((text_x, text_y), text, font=font, fill=(236, 247, 255, 255))
+
+
+def draw_panel_strip_title(draw: ImageDraw.ImageDraw, bbox: BBox, text: str, rng: random.Random) -> None:
+    x, y, w, h = bbox.x, bbox.y, bbox.w, bbox.h
+    top = y + h * 0.12
+    bottom = y + h * 0.88
+    fill = rng.choice([(5, 39, 86, 145), (8, 50, 105, 135), (4, 34, 78, 150)])
+    line = rng.choice([(0, 159, 255, 230), (48, 194, 255, 230), (0, 220, 255, 220)])
+    draw.rectangle([x, top, x + w, bottom], fill=fill)
+    draw.line([x, top, x + w, top], fill=line, width=2)
+    draw.line([x, bottom, x + w, bottom], fill=(0, 127, 220, 170), width=1)
+    draw.line([x + w * 0.18, y + h * 0.03, x + w * 0.95, y + h * 0.03], fill=(70, 195, 255, 115), width=1)
+
+    icon_cx = x + min(max(18.0, h * 0.72), 28.0)
+    icon_cy = y + h * 0.50
+    radius = max(5.5, min(9.0, h * 0.25))
+    hex_points = [
+        (icon_cx + math.cos(math.pi / 3 * i + math.pi / 6) * radius, icon_cy + math.sin(math.pi / 3 * i + math.pi / 6) * radius)
+        for i in range(6)
+    ]
+    draw.polygon(hex_points, fill=(7, 67, 124, 230), outline=line)
+    draw.ellipse([icon_cx - radius * 0.35, icon_cy - radius * 0.35, icon_cx + radius * 0.35, icon_cy + radius * 0.35], fill=(39, 220, 255, 220))
+
+    text_x = x + min(42.0, max(30.0, h * 1.28))
+    max_width = int(max(20.0, w - (text_x - x) - 10.0))
+    font = fit_font(text, max_size=int(max(12.0, h * 0.48)), max_width=max_width)
+    text_bbox = draw.textbbox((0, 0), text, font=font)
+    text_h = text_bbox[3] - text_bbox[1]
+    text_y = y + (h - text_h) / 2.0 - 1
+    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        draw.text((text_x + dx, text_y + dy), text, font=font, fill=(0, 59, 105, 220))
+    draw.text((text_x, text_y), text, font=font, fill=(185, 236, 255, 255))
 
 
 def draw_content_hint(draw: ImageDraw.ImageDraw, bbox: BBox, asset: ComponentAsset, rng: random.Random, compact: bool = False) -> None:
@@ -817,6 +1087,63 @@ def draw_bar_hint(draw: ImageDraw.ImageDraw, bbox: BBox, rng: random.Random) -> 
         x = bbox.x + 16 + index * step
         color = rng.choice([(96, 225, 255, 210), (85, 230, 160, 210), (255, 218, 92, 210)])
         draw.rectangle([x, base_y - bar_h, x + step * 0.48, base_y], fill=color)
+
+
+def draw_luminous_bar_chart_hint(draw: ImageDraw.ImageDraw, bbox: BBox, rng: random.Random) -> None:
+    if bbox.w < 80 or bbox.h < 70:
+        draw_bar_hint(draw, bbox, rng)
+        return
+
+    plot = BBox(bbox.x + bbox.w * 0.08, bbox.y + bbox.h * 0.10, bbox.w * 0.86, bbox.h * 0.78)
+    grid = rng.choice([(70, 143, 190, 74), (58, 119, 176, 66), (45, 98, 150, 62)])
+    axis = rng.choice([(122, 203, 255, 125), (86, 180, 255, 118)])
+    label_color = (205, 230, 245, 160)
+
+    draw.rectangle([bbox.x + 2, bbox.y + 2, bbox.right - 2, bbox.bottom - 2], fill=(4, 18, 40, rng.randint(12, 34)))
+    for row in range(5):
+        y = plot.y + row * plot.h / 4.0
+        draw.line([plot.x, y, plot.right, y], fill=grid, width=1)
+    for col in range(6):
+        x = plot.x + col * plot.w / 5.0
+        draw.line([x, plot.y, x, plot.bottom], fill=(grid[0], grid[1], grid[2], max(26, grid[3] - 24)), width=1)
+
+    draw.line([plot.x, plot.y, plot.x, plot.bottom], fill=axis, width=1)
+    draw.line([plot.x, plot.bottom, plot.right, plot.bottom], fill=axis, width=1)
+
+    font = load_font(9)
+    for index, value in enumerate(["800", "600", "400", "200"]):
+        y = plot.y + index * plot.h / 4.4
+        draw.text((bbox.x + 6, y - 6), value, font=font, fill=label_color)
+
+    bars = rng.randint(5, 8)
+    step = plot.w / bars
+    palette = rng.choice(
+        [
+            [(26, 215, 255, 235), (45, 234, 217, 230)],
+            [(34, 211, 238, 235), (22, 163, 255, 230)],
+            [(35, 236, 190, 235), (17, 198, 255, 225)],
+        ]
+    )
+    for index in range(bars):
+        bar_h = rng.uniform(0.34, 0.96) * plot.h
+        bar_w = max(7.0, min(22.0, step * rng.uniform(0.30, 0.44)))
+        x = plot.x + step * index + (step - bar_w) / 2.0
+        y = plot.bottom - bar_h
+        glow = rng.choice([(18, 214, 255, 58), (42, 235, 204, 54), (55, 190, 255, 50)])
+        draw.rounded_rectangle([x - 4, y - 3, x + bar_w + 4, plot.bottom + 2], radius=4, fill=glow)
+        draw.rectangle([x, y, x + bar_w, plot.bottom], fill=palette[index % len(palette)])
+        draw.polygon(
+            [
+                (x, y),
+                (x + bar_w * 0.5, y - min(7.0, bar_w * 0.45)),
+                (x + bar_w, y),
+                (x + bar_w * 0.5, y + min(7.0, bar_w * 0.45)),
+            ],
+            fill=(128, 245, 255, 230),
+        )
+        if bbox.w > 170:
+            label = rng.choice(["应用1", "应用2", "告警", "服务", "节点"])
+            draw.text((x - 4, plot.bottom + 3), label, font=font, fill=label_color)
 
 
 def draw_line_hint(draw: ImageDraw.ImageDraw, bbox: BBox, rng: random.Random, fill_area: bool) -> None:
@@ -939,6 +1266,8 @@ def draw_preview(image: Image.Image, meta: Dict[str, object], output_path: Path)
     draw = ImageDraw.Draw(preview, "RGBA")
     colors = {
         "Panel": (56, 189, 248, 230),
+        "Region": (125, 211, 252, 170),
+        "Content": (148, 163, 184, 210),
         "Title": (250, 204, 21, 230),
         "Chart": (74, 222, 128, 230),
         "Table": (251, 146, 60, 230),
@@ -960,9 +1289,16 @@ def draw_preview(image: Image.Image, meta: Dict[str, object], output_path: Path)
     preview.save(output_path)
 
 
-def update_counts(meta: Dict[str, object], class_counts: Dict[str, int], component_counts: Dict[str, int]) -> None:
+def update_counts(
+    meta: Dict[str, object],
+    class_counts: Dict[str, int],
+    component_counts: Dict[str, int],
+    node_type_counts: Dict[str, int],
+) -> None:
     for node in meta.get("nodes", []):
         node_type = str(node.get("type", ""))
+        if node_type in node_type_counts:
+            node_type_counts[node_type] += 1
         if node_type in class_counts:
             class_counts[node_type] += 1
         component_id = node.get("componentId")
@@ -999,11 +1335,12 @@ def add_synthetic_node(
     class_to_id: Dict[str, int],
     text: Optional[str] = None,
     role: Optional[str] = None,
+    emit_label: bool = True,
 ) -> None:
     clipped = clip_bbox(bbox, width, height)
     if clipped.w < 4 or clipped.h < 4:
         return
-    label = yolo_label(clipped, node_type, component_id, width, height, label_mode, class_to_id)
+    label = yolo_label(clipped, node_type, component_id, width, height, label_mode, class_to_id) if emit_label else None
     if label:
         labels.append(label)
     node = {
@@ -1083,8 +1420,10 @@ def coarse_type(record: ComponentRecord) -> str:
 
 def level_for_type(node_type: str) -> int:
     return {
+        "Region": 1,
         "Panel": 2,
         "Border": 2,
+        "Content": 3,
         "Title": 3,
         "Decorate": 3,
         "Filter": 4,

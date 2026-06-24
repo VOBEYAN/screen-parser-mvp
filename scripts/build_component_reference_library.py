@@ -26,6 +26,10 @@ def main() -> None:
         "--description-features",
         default=str(ROOT.parent / "ai-schema-view" / "schema-md" / "component-description-features.json"),
     )
+    parser.add_argument(
+        "--vlm-profiles",
+        default=str(ROOT / "data" / "component-reference" / "component_vlm_profiles.json"),
+    )
     parser.add_argument("--image-root", default=str(ROOT.parent / "ai-schema-view" / "src" / "assets" / "images" / "chart"))
     parser.add_argument("--output", default=str(ROOT / "data" / "component-reference"))
     args = parser.parse_args()
@@ -39,6 +43,7 @@ def main() -> None:
 
     library = ComponentLibrary.from_catalog(catalog_path)
     description_features = load_json(feature_path)
+    vlm_profiles = load_component_profiles(Path(args.vlm_profiles))
     image_index = build_image_index(image_root)
 
     components: List[Dict[str, object]] = []
@@ -57,6 +62,7 @@ def main() -> None:
         shutil.copy2(source_path, target_path)
 
         features = extract_image_features_from_path(str(target_path))
+        apply_reference_profile_features(features, vlm_profiles.get(record.key, {}))
         components.append(
             {
                 "componentId": record.key,
@@ -91,6 +97,76 @@ def load_json(path: Path) -> Dict[str, object]:
     if not path.exists():
         return {}
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_component_profiles(path: Path) -> Dict[str, Dict[str, object]]:
+    payload = load_json(path)
+    components = payload.get("components") if isinstance(payload, dict) else None
+    if not isinstance(components, list):
+        return {}
+    profiles: Dict[str, Dict[str, object]] = {}
+    for item in components:
+        if not isinstance(item, dict):
+            continue
+        component_id = str(item.get("componentId") or "")
+        if component_id:
+            profiles[component_id] = item
+    return profiles
+
+
+def apply_reference_profile_features(features: Dict[str, object], profile: Dict[str, object]) -> None:
+    visual_form = normalize_profile_form(str(profile.get("visualForm") or ""))
+    content_type = str(profile.get("contentType") or "")
+    if not visual_form and not content_type:
+        return
+    structural = dict(features.get("structural") or {})
+    forms = [str(item) for item in structural.get("forms", []) if item]
+    if visual_form and visual_form not in forms:
+        forms.insert(0, visual_form)
+    if content_type == "table" and "table_grid" not in forms:
+        forms.insert(0, "table_grid")
+    elif content_type == "pie_chart" and visual_form and visual_form not in forms:
+        forms.insert(0, visual_form)
+    elif content_type == "scatter_chart" and "scatter_plot" not in forms:
+        forms.insert(0, "scatter_plot")
+
+    structural["primaryForm"] = visual_form or content_type_to_form(content_type) or structural.get("primaryForm", "")
+    structural["forms"] = forms
+    structural["profileContentType"] = content_type
+    structural["profileVisualForm"] = visual_form
+    features["structural"] = structural
+
+
+def normalize_profile_form(value: str) -> str:
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "prism_bar": "isometric_prism_bar",
+        "color_prism_bar": "isometric_prism_bar",
+        "cylinder_bar": "cylinder_vertical_bar",
+        "3d_cylinder_bar": "gradient_cylinder_bar",
+        "liquid_bar": "liquid_vertical_bar",
+        "pie_3d_exploded": "pie3d_exploded",
+        "pie_3d_ring": "pie3d_ring",
+        "scatter": "scatter_plot",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def content_type_to_form(content_type: str) -> str:
+    return {
+        "table": "table_grid",
+        "line_chart": "line_chart",
+        "area_chart": "line_gradient_area",
+        "bar_chart": "vertical_bar",
+        "pie_chart": "pie",
+        "scatter_chart": "scatter_plot",
+        "map": "map",
+        "metric_card": "metric_card",
+        "filter": "filter",
+        "title": "title_text",
+        "border": "border_frame",
+        "panel": "panel",
+    }.get(content_type, "")
 
 
 def build_image_index(image_root: Path) -> Dict[str, List[Path]]:
