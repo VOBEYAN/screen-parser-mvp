@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from app.graph_transformer import GraphTransformerHierarchyModel
 
 
-TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
+TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter", "Image"]
 TYPE_TO_ID = {name: idx for idx, name in enumerate(TYPE_NAMES)}
 
 

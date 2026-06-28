@@ -83,6 +83,8 @@ class ReportWriter:
             "Map": (153, 102, 255, 230),
             "MetricCard": (255, 99, 132, 230),
             "Decorate": (201, 203, 207, 210),
+            "Filter": (45, 212, 191, 230),
+            "Image": (14, 165, 233, 230),
         }
 
         for node in nodes:

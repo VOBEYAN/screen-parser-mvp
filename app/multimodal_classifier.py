@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from .component_library import ComponentLibrary
 from .component_profiles import load_component_profiles, normalize_visual_form, profile_match_score, visual_form_compatible
+from .local_qwen_vl import LocalQwenVLComponentRecognizer
 from .matcher import TYPE_TO_CATEGORIES
 from .schemas import BBox, ComponentRecord, Node
 from .visual_matcher import VisualReferenceLibrary, extract_image_features, form_family
@@ -25,6 +26,13 @@ from .visual_matcher import VisualReferenceLibrary, extract_image_features, form
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 _PADDLE_OCR_ENGINE = None
 DATE_LABEL_RE = re.compile(r"\d{1,2}-\d{1,2}")
+
+
+def resolve_project_path(value: str) -> str:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    return str(path)
 
 
 CONTENT_TO_TYPE = {
@@ -41,6 +49,8 @@ CONTENT_TO_TYPE = {
     "funnel_chart": "Chart",
     "wordcloud": "Chart",
     "chart": "Chart",
+    "image": "Image",
+    "ai_shield": "Image",
     "decorate": "Decorate",
     "panel": "Panel",
     "border": "Border",
@@ -60,6 +70,8 @@ CONTENT_TO_CATEGORIES = {
     "funnel_chart": ["Funnels"],
     "wordcloud": ["WordClouds"],
     "chart": ["Bars", "Lines", "Pies", "Scatters", "Areas", "Funnels", "WordClouds", "FlowChart", "Mores"],
+    "image": ["Biz", "Three", "Decorates"],
+    "ai_shield": ["Biz"],
     "decorate": ["Decorates", "Mores"],
     "panel": ["Borders", "Decorates"],
     "border": ["Borders"],
@@ -138,9 +150,14 @@ FOCUSED_COMPONENT_SETS = {
         "VChartArea",
     ],
     "Table": ["AlarmList", "TableList", "TableScrollBoard", "TablesBasic"],
+    "Map": ["ChinaMap", "MapAmap", "MapBase"],
+    "map": ["ChinaMap", "MapAmap", "MapBase"],
     "Title": ["title1", "TextCommon", "TextGradient", "TextBarrage", "Decorates06"],
     "Border": ["Border04", "Border02", "Border13", "Border05", "Border01", "Border07", "Border14"],
     "Panel": ["Border04", "Border02", "Border13", "Border05", "Border01", "Border07", "Border14"],
+    "Image": ["AIShield", "AIRobot", "KeySecurity3D", "ThreeEarth01"],
+    "image": ["AIShield", "AIRobot", "KeySecurity3D", "ThreeEarth01"],
+    "ai_shield": ["AIShield", "KeySecurity3D", "AIRobot"],
 }
 
 CONTENT_KEYWORDS = {
@@ -156,6 +173,8 @@ CONTENT_KEYWORDS = {
     "metric_card": ["数字", "指标", "状态", "告警", "能量", "翻牌", "总数"],
     "filter": ["输入", "选择", "筛选", "下拉"],
     "title": ["标题", "文字", "文本"],
+    "image": ["图片", "图像", "主视觉", "盾牌", "机器人", "3d", "地球", "AI"],
+    "ai_shield": ["盾牌", "AI", "风险预警", "安全"],
     "decorate": ["装饰", "线", "点缀"],
     "border": ["边框", "框"],
 }
@@ -171,10 +190,25 @@ class MultimodalConfig:
     max_nodes: int = 36
     candidate_k: int = 95
     force_llm: bool = False
+    local_qwen_enabled: bool = False
+    local_qwen_model_path: Optional[str] = None
+    local_qwen_adapter_path: Optional[str] = None
+    local_qwen_device: str = "auto"
+    local_qwen_image_size: int = 224
+    local_qwen_max_new_tokens: int = 96
 
     @property
     def llm_enabled(self) -> bool:
         return bool(self.enabled and self.model and self.api_key)
+
+    @property
+    def local_enabled(self) -> bool:
+        return bool(
+            self.enabled
+            and self.local_qwen_enabled
+            and self.local_qwen_model_path
+            and self.local_qwen_adapter_path
+        )
 
 
 class MultimodalComponentClassifier:
@@ -190,12 +224,14 @@ class MultimodalComponentClassifier:
         library: ComponentLibrary,
         config: Optional[MultimodalConfig] = None,
         visual_library: Optional[VisualReferenceLibrary] = None,
+        local_qwen: Optional[LocalQwenVLComponentRecognizer] = None,
     ):
         self.library = library
         self.config = config or MultimodalConfig(enabled=False)
         self.visual_library = visual_library or VisualReferenceLibrary([])
         reference_root = PROJECT_ROOT / "data" / "component-reference"
         self.component_profiles = load_component_profiles(str(reference_root), library)
+        self.local_qwen = local_qwen or self._build_local_qwen()
 
     @classmethod
     def from_env(
@@ -209,6 +245,10 @@ class MultimodalComponentClassifier:
         max_nodes: int = 36,
         candidate_k: int = 95,
         force_llm: Optional[bool] = None,
+        local_qwen_model_path: Optional[str] = None,
+        local_qwen_adapter_path: Optional[str] = None,
+        local_qwen_device: Optional[str] = None,
+        local_qwen_enabled: Optional[bool] = None,
     ) -> "MultimodalComponentClassifier":
         resolved_model = model or os.getenv("SCREEN_PARSER_VLM_MODEL")
         resolved_api_key = api_key or os.getenv("SCREEN_PARSER_VLM_API_KEY") or os.getenv("OPENAI_API_KEY")
@@ -223,6 +263,29 @@ class MultimodalComponentClassifier:
             force_llm = os.getenv("SCREEN_PARSER_VLM_FORCE", "").lower() in {"1", "true", "yes", "on"}
         max_nodes = int(os.getenv("SCREEN_PARSER_VLM_MAX_NODES", str(max_nodes)))
         candidate_k = int(os.getenv("SCREEN_PARSER_VLM_CANDIDATE_K", str(candidate_k)))
+        default_local_model = PROJECT_ROOT / "models" / "qwen3-vl-2b-instruct-mlx-bf16-hfkeyed"
+        default_local_adapter = PROJECT_ROOT / "output" / "qwen3-vl-mps-peft-component-lora-render-mixed"
+        resolved_local_model = resolve_project_path(
+            local_qwen_model_path
+            or os.getenv("SCREEN_PARSER_LOCAL_QWEN_MODEL")
+            or str(default_local_model)
+        )
+        resolved_local_adapter = resolve_project_path(
+            local_qwen_adapter_path
+            or os.getenv("SCREEN_PARSER_LOCAL_QWEN_ADAPTER")
+            or str(default_local_adapter)
+        )
+        local_flag = os.getenv("SCREEN_PARSER_LOCAL_QWEN_ENABLE", "auto").lower()
+        if local_qwen_enabled is None:
+            if local_flag in {"1", "true", "yes", "on"}:
+                local_qwen_enabled = True
+            elif local_flag in {"0", "false", "no", "off"}:
+                local_qwen_enabled = False
+            else:
+                local_qwen_enabled = Path(resolved_local_model).exists() and Path(resolved_local_adapter).exists()
+        resolved_local_device = local_qwen_device or os.getenv("SCREEN_PARSER_LOCAL_QWEN_DEVICE") or "auto"
+        local_image_size = int(os.getenv("SCREEN_PARSER_LOCAL_QWEN_IMAGE_SIZE", "224"))
+        local_max_new_tokens = int(os.getenv("SCREEN_PARSER_LOCAL_QWEN_MAX_NEW_TOKENS", "96"))
         config = MultimodalConfig(
             enabled=enabled,
             model=resolved_model,
@@ -232,6 +295,12 @@ class MultimodalComponentClassifier:
             max_nodes=max_nodes,
             candidate_k=candidate_k,
             force_llm=force_llm,
+            local_qwen_enabled=bool(local_qwen_enabled),
+            local_qwen_model_path=resolved_local_model,
+            local_qwen_adapter_path=resolved_local_adapter,
+            local_qwen_device=resolved_local_device,
+            local_qwen_image_size=local_image_size,
+            local_qwen_max_new_tokens=local_max_new_tokens,
         )
         return cls(library, config, visual_library=visual_library)
 
@@ -239,7 +308,35 @@ class MultimodalComponentClassifier:
     def mode(self) -> str:
         if not self.config.enabled:
             return "disabled"
+        if self.config.local_enabled:
+            return "local_qwen3_vl_lora"
         return "multimodal_llm" if self.config.llm_enabled else "visual_content_rules"
+
+    @property
+    def local_qwen_status(self) -> Dict[str, object]:
+        if not self.local_qwen:
+            return {
+                "configured": self.config.local_enabled,
+                "loaded": False,
+                "loadError": None,
+                "modelPath": self.config.local_qwen_model_path,
+                "adapterPath": self.config.local_qwen_adapter_path,
+                "device": self.config.local_qwen_device,
+                "imageSize": self.config.local_qwen_image_size,
+            }
+        return self.local_qwen.status()
+
+    def _build_local_qwen(self) -> Optional[LocalQwenVLComponentRecognizer]:
+        if not self.config.local_enabled:
+            return None
+        return LocalQwenVLComponentRecognizer(
+            model_path=str(self.config.local_qwen_model_path),
+            adapter_path=str(self.config.local_qwen_adapter_path),
+            library=self.library,
+            device=self.config.local_qwen_device,
+            image_size=self.config.local_qwen_image_size,
+            max_new_tokens=self.config.local_qwen_max_new_tokens,
+        )
 
     def for_request(
         self,
@@ -258,8 +355,19 @@ class MultimodalComponentClassifier:
             max_nodes=self.config.max_nodes,
             candidate_k=self.config.candidate_k,
             force_llm=self.config.force_llm if force_llm is None else force_llm,
+            local_qwen_enabled=self.config.local_qwen_enabled,
+            local_qwen_model_path=self.config.local_qwen_model_path,
+            local_qwen_adapter_path=self.config.local_qwen_adapter_path,
+            local_qwen_device=self.config.local_qwen_device,
+            local_qwen_image_size=self.config.local_qwen_image_size,
+            local_qwen_max_new_tokens=self.config.local_qwen_max_new_tokens,
         )
-        return MultimodalComponentClassifier(self.library, config=config, visual_library=self.visual_library)
+        return MultimodalComponentClassifier(
+            self.library,
+            config=config,
+            visual_library=self.visual_library,
+            local_qwen=self.local_qwen,
+        )
 
     def refine_nodes(self, nodes: Iterable[Node], image_path: str, top_k: int = 1) -> Dict[str, object]:
         if not self.config.enabled:
@@ -270,6 +378,8 @@ class MultimodalComponentClassifier:
         paddle_ocr = run_paddle_ocr(image_path)
         processed = 0
         llm_calls = 0
+        local_qwen_calls = 0
+        local_qwen_disabled_for_request = False
         errors = []
         for node in sorted(node_list, key=node_processing_priority):
             if node.type in {"Screen", "Region", "Content"}:
@@ -293,7 +403,27 @@ class MultimodalComponentClassifier:
                 local_result["extractedLineData"] = line_dataset
             result = local_result
 
-            if self.config.llm_enabled and should_call_llm(node, local_result, force=self.config.force_llm):
+            used_local_qwen = False
+            if (
+                self.config.local_enabled
+                and not local_qwen_disabled_for_request
+                and should_call_local_qwen(node, local_result, force=self.config.force_llm)
+            ):
+                try:
+                    qwen_result = self.classify_with_local_qwen(crop)
+                    if qwen_result:
+                        result = merge_llm_and_local(qwen_result, local_result)
+                        local_qwen_calls += 1
+                        used_local_qwen = True
+                except Exception as exc:
+                    local_qwen_disabled_for_request = True
+                    errors.append({"nodeId": node.node_id, "source": "local_qwen3_vl_lora", "error": str(exc)[:240]})
+
+            if (
+                not used_local_qwen
+                and self.config.llm_enabled
+                and should_call_llm(node, local_result, force=self.config.force_llm)
+            ):
                 try:
                     structure_context = build_structure_context(node, node_list)
                     llm_result = self.classify_with_llm(
@@ -328,6 +458,10 @@ class MultimodalComponentClassifier:
             "llmCallCount": llm_calls,
             "llmModel": self.config.model if self.config.llm_enabled else None,
             "llmBaseUrl": self.config.base_url if self.config.llm_enabled else None,
+            "localQwenEnabled": self.config.local_enabled,
+            "localQwenConfigured": bool(self.config.local_qwen_model_path and self.config.local_qwen_adapter_path),
+            "localQwenCallCount": local_qwen_calls,
+            "localQwenStatus": self.local_qwen_status,
             "forceLlm": self.config.force_llm,
             "paddleOcrEnabled": paddle_ocr["enabled"],
             "paddleOcrTextCount": len(paddle_ocr["items"]),
@@ -424,6 +558,11 @@ class MultimodalComponentClassifier:
         attach_candidate_scores(resolved, candidates)
         return resolved
 
+    def classify_with_local_qwen(self, crop: Image.Image) -> Optional[Dict[str, object]]:
+        if not self.local_qwen:
+            return None
+        return self.local_qwen.classify(crop)
+
     def candidate_records(self, node: Node, top_k: int, content_type_hint: str = "") -> List[ComponentRecord]:
         top_k = min(len(self.library.records), max(top_k, 8))
         candidate_ids = []
@@ -503,7 +642,7 @@ class MultimodalComponentClassifier:
             predicted_type = node.type
             effective_result["contentType"] = content_type
             effective_result["componentType"] = predicted_type
-            effective_result["componentId"] = node.component_id or effective_result.get("componentId")
+            effective_result["componentId"] = effective_result.get("componentId") or node.component_id
             effective_result["visualForm"] = "border_frame"
             effective_result["specificVisualForm"] = "border_frame"
 
@@ -513,10 +652,16 @@ class MultimodalComponentClassifier:
             effective_result["contentType"] = content_type
             effective_result["componentType"] = predicted_type
 
+        effective_result = guard_incompatible_component_result(node, effective_result, self.library)
         ranked = self.rank_records(node, effective_result, top_k=top_k, crop_features=crop_features)
         if ranked:
             node.component_id = ranked[0]["componentId"]
             node.candidates = ranked
+
+        text_evidence = str(effective_result.get("textEvidence") or effective_result.get("ocrEvidence") or "")[:240]
+        structure_evidence = str(effective_result.get("structureEvidence") or "")[:240]
+        if not structure_evidence:
+            structure_evidence = build_structure_evidence(node, ranked)[:240]
 
         node.features["contentClassifier"] = {
             "mode": self.mode,
@@ -526,17 +671,23 @@ class MultimodalComponentClassifier:
             "text": text,
             "paddleOcrText": str(paddle_ocr.get("text") or "")[:240],
             "paddleOcrItems": paddle_ocr.get("items") or [],
-            "textEvidence": str(result.get("textEvidence") or result.get("ocrEvidence") or "")[:240],
-            "visualEvidence": str(result.get("visualEvidence") or "")[:240],
-            "structureEvidence": str(result.get("structureEvidence") or "")[:240],
-            "reason": str(result.get("reason") or "")[:240],
+            "textEvidence": text_evidence,
+            "visualEvidence": str(effective_result.get("visualEvidence") or "")[:240],
+            "structureEvidence": structure_evidence,
+            "reason": str(effective_result.get("reason") or "")[:240],
             "llmComponentId": result.get("componentId"),
+            "effectiveLlmComponentId": effective_result.get("componentId"),
+            "rejectedComponentId": effective_result.get("rejectedComponentId"),
+            "rejectedComponentCategory": effective_result.get("rejectedComponentCategory"),
+            "rejectedReason": effective_result.get("rejectedReason"),
             "llmCandidateNo": result.get("candidateNo"),
             "llmVisualForm": result.get("visualForm"),
-            "localVisualForm": result.get("localVisualForm"),
-            "localVisualSignature": result.get("localVisualSignature"),
-            "visualSignature": result.get("visualSignature"),
-            "extractedLineData": result.get("extractedLineData"),
+            "localVisualForm": effective_result.get("localVisualForm"),
+            "localVisualSignature": effective_result.get("localVisualSignature"),
+            "visualSignature": effective_result.get("visualSignature"),
+            "extractedLineData": effective_result.get("extractedLineData"),
+            "modelSource": effective_result.get("modelSource"),
+            "rawModelOutput": str(result.get("rawModelOutput") or "")[:500],
         }
 
     def rank_records(
@@ -561,6 +712,18 @@ class MultimodalComponentClassifier:
         if normalize_visual_form(target_visual_form) in {"percent_area_chart", "area_chart"} and "Areas" not in categories:
             categories = [*categories, "Areas"]
         llm_record = self.library.by_key.get(llm_component_id)
+        strict_categories = strict_allowed_categories_for_node(node.type, content_type)
+        if strict_categories:
+            allowed = set(strict_categories)
+            candidate_score_by_id = {
+                component_id: score
+                for component_id, score in candidate_score_by_id.items()
+                if (self.library.by_key.get(component_id) and self.library.by_key[component_id].category in allowed)
+            }
+            if llm_record and llm_record.category not in allowed:
+                llm_component_id = ""
+                llm_record = None
+                llm_decision_strength = 0.0
         if llm_record and llm_record.category not in categories:
             categories = [llm_record.category, *categories]
         records = self.library.records
@@ -584,6 +747,8 @@ class MultimodalComponentClassifier:
                 score -= 0.42
             if record.category in (categories or []):
                 score += 0.06
+            if strict_categories and record.category not in strict_categories:
+                score -= 1.1
             score += 0.35 * keyword_score(record, content_type, text)
             score += aspect_score(record, node)
             if visual_score is not None and visual_score >= 0.78:
@@ -714,6 +879,84 @@ def build_candidate_evidence_text(result: Dict[str, object]) -> str:
         str(result.get(key) or "")
         for key in ["text", "ocrText", "textEvidence", "visualEvidence", "reason"]
     )
+
+
+STRICT_CATEGORY_NODE_TYPES = {"Border", "Panel", "Title", "Table", "Map", "Filter", "Image"}
+
+
+def strict_allowed_categories_for_node(node_type: str, content_type: str = "") -> List[str]:
+    if node_type not in STRICT_CATEGORY_NODE_TYPES:
+        return []
+    if node_type == "Border":
+        return ["Borders"]
+    if node_type == "Image":
+        return ["Biz", "Three", "Decorates"]
+    categories = list(CONTENT_TO_CATEGORIES.get(content_type) or TYPE_TO_CATEGORIES.get(node_type, []))
+    if node_type == "Title" and "Decorates" not in categories:
+        categories.append("Decorates")
+    return categories
+
+
+def guard_incompatible_component_result(
+    node: Node,
+    result: Dict[str, object],
+    library: ComponentLibrary,
+) -> Dict[str, object]:
+    content_type = normalize_content_type(str(result.get("contentType") or result.get("visualForm") or ""))
+    allowed = strict_allowed_categories_for_node(node.type, content_type)
+    if not allowed:
+        return result
+
+    cleaned = dict(result)
+    allowed_set = set(allowed)
+    scores = cleaned.get("candidateScores")
+    if isinstance(scores, list):
+        cleaned["candidateScores"] = [
+            item
+            for item in scores
+            if not isinstance(item, dict)
+            or not _component_category_known_and_blocked(str(item.get("componentId") or ""), allowed_set, library)
+        ]
+
+    component_id = str(cleaned.get("componentId") or "").strip()
+    record = library.by_key.get(component_id)
+    if not record or record.category in allowed_set:
+        return cleaned
+
+    reason = (
+        f"检测类型 {node.type} 只允许 {', '.join(allowed)}；"
+        f"已忽略模型候选 {record.key}({record.category})。"
+    )
+    previous = str(cleaned.get("structureEvidence") or "")
+    cleaned["structureEvidence"] = " | ".join(item for item in [previous, reason] if item)
+    cleaned["rejectedComponentId"] = record.key
+    cleaned["rejectedComponentCategory"] = record.category
+    cleaned["rejectedReason"] = reason
+    cleaned["componentId"] = ""
+    cleaned["candidateNo"] = ""
+    return cleaned
+
+
+def _component_category_known_and_blocked(
+    component_id: str,
+    allowed_categories: set[str],
+    library: ComponentLibrary,
+) -> bool:
+    record = library.by_key.get(component_id)
+    return bool(record and record.category not in allowed_categories)
+
+
+def build_structure_evidence(node: Node, ranked: List[Dict[str, object]]) -> str:
+    top = ranked[0] if ranked else {}
+    box = node.bbox
+    parts = [
+        f"detector={node.type}",
+        f"bbox=({round(box.x, 1)},{round(box.y, 1)},{round(box.w, 1)},{round(box.h, 1)})",
+        f"parent={node.parent_id or '-'}",
+    ]
+    if top:
+        parts.append(f"candidateCategory={top.get('category') or '-'}")
+    return "; ".join(parts)
 
 
 def build_context_image(image: Image.Image, node: Node) -> Image.Image:
@@ -963,6 +1206,9 @@ def classify_crop_locally(crop: Image.Image, node: Node) -> Dict[str, object]:
     elif node.type in {"Map"} or looks_like_map(gray, edges):
         content_type = "map"
         confidence = 0.55
+    elif node.type == "Image":
+        content_type = "image"
+        confidence = 0.62
     elif node.type == "Chart":
         content_type = "chart"
         confidence = 0.54
@@ -1769,9 +2015,9 @@ def should_call_llm(node: Node, local_result: Dict[str, object], force: bool = F
     # Component IDs must be selected from the ai-schema-view library. Local
     # rules are only coarse detectors, so every meaningful content component
     # should be verified by the VLM even when OCR made the local confidence high.
-    if force and node.type in {"Chart", "Table", "Map", "MetricCard", "Filter"}:
+    if force and node.type in {"Chart", "Table", "Map", "MetricCard", "Filter", "Image"}:
         return True
-    if node.type in {"Chart", "Table", "Map", "MetricCard", "Filter"}:
+    if node.type in {"Chart", "Table", "Map", "MetricCard", "Filter", "Image"}:
         return True
     if content_type in {
         "bar_chart",
@@ -1786,6 +2032,8 @@ def should_call_llm(node: Node, local_result: Dict[str, object], force: bool = F
         "map",
         "metric_card",
         "filter",
+        "image",
+        "ai_shield",
         "title",
     }:
         return True
@@ -1796,6 +2044,16 @@ def should_call_llm(node: Node, local_result: Dict[str, object], force: bool = F
     return confidence < 0.82
 
 
+def should_call_local_qwen(node: Node, local_result: Dict[str, object], force: bool = False) -> bool:
+    if node.type in {"Screen", "Region", "Content"}:
+        return False
+    if force:
+        return True
+    if node.type in {"Chart", "Table", "Map", "MetricCard", "Filter", "Image", "Title", "Border", "Panel", "Decorate"}:
+        return True
+    return should_call_llm(node, local_result, force=False)
+
+
 def node_processing_priority(node: Node) -> Tuple[int, float, float]:
     priority = {
         "Chart": 0,
@@ -1803,6 +2061,7 @@ def node_processing_priority(node: Node) -> Tuple[int, float, float]:
         "Map": 2,
         "MetricCard": 3,
         "Filter": 4,
+        "Image": 5,
         "Title": 8,
         "Border": 9,
         "Panel": 10,
@@ -1928,9 +2187,9 @@ def build_prompt(
                 "For titles, prioritize short heading text and title bar layout.",
                 "For maps/network diagrams, consider central labels, node labels, geography words, and spatial structure.",
             ],
-            "returnJsonSchema": {
-                "contentType": "one of allowedContentTypes, e.g. bar_chart/table/metric_card/title/map/filter",
-                "componentType": "Panel|Title|Chart|Table|Map|MetricCard|Border|Decorate|Filter",
+                "returnJsonSchema": {
+                "contentType": "one of allowedContentTypes, e.g. bar_chart/table/metric_card/title/map/filter/image",
+                "componentType": "Panel|Title|Chart|Table|Map|MetricCard|Border|Decorate|Filter|Image",
                 "componentId": "best candidate componentId or empty string",
                 "candidateNo": "candidateNo such as C1/C2, or empty string",
                 "visualForm": "fine-grained form visible in image1, e.g. liquid_vertical_bar/donut_pie/cylinder_bar/prism_bar/line_chart/table_grid/border_frame",
@@ -2330,6 +2589,11 @@ def normalize_content_type(value: str) -> str:
         "input": "filter",
         "select": "filter",
         "word_cloud": "wordcloud",
+        "img": "image",
+        "photo": "image",
+        "picture": "image",
+        "visual": "image",
+        "shield": "ai_shield",
     }
     key = aliases.get(key, key)
     return key if key in CONTENT_TO_TYPE else "chart" if "chart" in key else key
@@ -2337,7 +2601,7 @@ def normalize_content_type(value: str) -> str:
 
 def normalize_component_type(value: str) -> str:
     value = value.strip()
-    if value in {"Region", "Panel", "Content", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"}:
+    if value in {"Region", "Panel", "Content", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter", "Image"}:
         return value
     lowered = value.lower()
     for content_type, component_type in CONTENT_TO_TYPE.items():
@@ -2358,6 +2622,8 @@ def should_update_type(
         return False
     raw_lower = raw_type.lower()
     if ("border" in raw_lower or "panel" in raw_lower) and predicted not in {"Border", "Panel"}:
+        return False
+    if (current == "Image" or "image" in raw_lower) and predicted != "Image":
         return False
     title_like = current == "Title" or "title" in raw_lower or "text" in raw_lower
     if title_like and predicted != "Title":
@@ -2386,6 +2652,7 @@ def level_for_type(node_type: str) -> int:
         "Table": 4,
         "Map": 4,
         "MetricCard": 4,
+        "Image": 4,
     }.get(node_type, 4)
 
 
@@ -2637,6 +2904,8 @@ def content_type_for_visual_form(visual_form: str) -> str:
         return "scatter_chart"
     if "map" in form:
         return "map"
+    if any(token in form for token in ["image", "photo", "picture", "shield", "robot", "illustration", "visual"]):
+        return "image"
     return ""
 
 

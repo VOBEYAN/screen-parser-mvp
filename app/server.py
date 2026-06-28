@@ -272,6 +272,7 @@ class ParserHandler(BaseHTTPRequestHandler):
         categories = library.categories()
         model_path = getattr(detector, "model_path", None)
         classifier_config = self.parser.multimodal_classifier.config
+        local_qwen_status = self.parser.multimodal_classifier.local_qwen_status
         return {
             "detector": detector.__class__.__name__,
             "detectorModel": model_path,
@@ -287,6 +288,13 @@ class ParserHandler(BaseHTTPRequestHandler):
             "llmForce": classifier_config.force_llm,
             "llmMaxNodes": classifier_config.max_nodes,
             "llmCandidateK": classifier_config.candidate_k,
+            "localQwenEnabled": classifier_config.local_enabled,
+            "localQwenConfigured": bool(classifier_config.local_qwen_model_path and classifier_config.local_qwen_adapter_path),
+            "localQwenLoaded": bool(local_qwen_status.get("loaded")),
+            "localQwenLoadError": local_qwen_status.get("loadError"),
+            "localQwenModelPath": local_qwen_status.get("modelPath"),
+            "localQwenAdapterPath": local_qwen_status.get("adapterPath"),
+            "localQwenDevice": local_qwen_status.get("device"),
             "componentLibraryCount": len(library.records),
             "componentCategoryCount": len(categories),
             "visualReferenceCount": len(visual_library.references),
@@ -433,6 +441,10 @@ def summarize_result(result: dict[str, Any]) -> dict[str, Any]:
         "llmEnabled": bool(content_classifier.get("llmEnabled")),
         "llmCallCount": int(content_classifier.get("llmCallCount") or 0),
         "llmModel": content_classifier.get("llmModel"),
+        "localQwenEnabled": bool(content_classifier.get("localQwenEnabled")),
+        "localQwenConfigured": bool(content_classifier.get("localQwenConfigured")),
+        "localQwenCallCount": int(content_classifier.get("localQwenCallCount") or 0),
+        "localQwenStatus": content_classifier.get("localQwenStatus") or {},
         "forceLlm": bool(content_classifier.get("forceLlm")),
         "paddleOcrEnabled": bool(content_classifier.get("paddleOcrEnabled")),
         "paddleOcrTextCount": int(content_classifier.get("paddleOcrTextCount") or 0),
@@ -507,6 +519,11 @@ def main() -> None:
     parser.add_argument("--multimodal-model", default=None)
     parser.add_argument("--multimodal-base-url", default=None)
     parser.add_argument("--multimodal-api-key", default=None)
+    parser.add_argument("--local-qwen-model", default=None)
+    parser.add_argument("--local-qwen-adapter", default=None)
+    parser.add_argument("--local-qwen-device", default=None)
+    parser.add_argument("--local-qwen", dest="local_qwen_enabled", action="store_true", default=None)
+    parser.add_argument("--no-local-qwen", dest="local_qwen_enabled", action="store_false")
     args = parser.parse_args()
 
     ParserHandler.parser = ScreenParser(
@@ -520,6 +537,10 @@ def main() -> None:
         multimodal_model=args.multimodal_model,
         multimodal_base_url=args.multimodal_base_url,
         multimodal_api_key=args.multimodal_api_key,
+        local_qwen_model=args.local_qwen_model,
+        local_qwen_adapter=args.local_qwen_adapter,
+        local_qwen_device=args.local_qwen_device,
+        local_qwen_enabled=args.local_qwen_enabled,
     )
     ParserHandler.artifact_root = Path(args.artifacts)
     ParserHandler.upload_dir = Path(args.artifacts) / "uploads"

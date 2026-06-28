@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import re
 from typing import Any, Dict, Iterable, List, Optional
 
 from .component_library import ComponentLibrary
-from .schemas import Node
+from .schemas import Node, ComponentRecord
 
 
 NUMBER_RE = re.compile(r"[-+]?\d+(?:\.\d+)?%?")
@@ -30,9 +31,25 @@ def build_ai_schema_components(
             continue
 
         classifier = node.features.get("contentClassifier") or {}
+        record = repair_component_record_for_schema(node, record, library, node_list)
+        component_bbox = repair_component_bbox_for_schema(node, record, classifier, node_list)
         dataset = infer_dataset(node, classifier, record.category)
+        repeated_metric_components = build_repeated_metric_components(node, record, library, classifier)
+        if repeated_metric_components:
+            components.extend(repeated_metric_components)
+            continue
         z_index = z_index_for_node(node.type)
-        option_patch = build_option_patch(record.category, record.key, dataset, classifier)
+        option_blueprint = library.option_blueprint(record.key)
+        schema_shape = library.option_shape(record.key)
+        option_patch = build_option_patch(
+            record.category,
+            record.key,
+            dataset,
+            classifier,
+            option_blueprint=option_blueprint,
+            schema_shape=schema_shape,
+            bbox=component_bbox,
+        )
         component = {
             "id": f"schema_{node.node_id}",
             "nodeId": node.node_id,
@@ -40,12 +57,13 @@ def build_ai_schema_components(
             "title": record.title,
             "category": record.category,
             "categoryName": record.category_name,
-            "bbox": node.bbox.to_dict(),
+            "schemaShape": schema_shape,
+            "bbox": component_bbox,
             "attr": {
-                "x": round(node.bbox.x, 2),
-                "y": round(node.bbox.y, 2),
-                "w": round(node.bbox.w, 2),
-                "h": round(node.bbox.h, 2),
+                "x": round(float(component_bbox["x"]), 2),
+                "y": round(float(component_bbox["y"]), 2),
+                "w": round(float(component_bbox["w"]), 2),
+                "h": round(float(component_bbox["h"]), 2),
                 "offsetX": 0,
                 "offsetY": 0,
                 "zIndex": z_index,
@@ -72,6 +90,7 @@ def build_ai_schema_components(
         virtual = build_virtual_inner_component(node, node_list, library)
         if virtual:
             components.append(virtual)
+    components.extend(build_virtual_panel_title_components(node_list, library, components))
     components.extend(build_global_virtual_components(node_list, library, components, classifier_summary or {}))
     components = suppress_overlapping_components(components)
     return sorted(components, key=lambda item: int((item.get("attr") or {}).get("zIndex") or 1))
@@ -89,9 +108,10 @@ CONTENT_CATEGORIES = {
     "Maps",
     "Mores",
     "Biz",
+    "Three",
 }
 
-INNER_CONTENT_TYPES = {"Chart", "Table", "Map", "MetricCard", "Filter"}
+INNER_CONTENT_TYPES = {"Chart", "Table", "Map", "MetricCard", "Filter", "Image"}
 
 
 def build_global_virtual_components(
@@ -101,6 +121,10 @@ def build_global_virtual_components(
     classifier_summary: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
     components: List[Dict[str, Any]] = []
+    semantic_components = build_schema_semantic_aggregate_components(nodes, library)
+    if semantic_components:
+        return semantic_components
+
     if any(item.get("componentId") == "AIShield" for item in existing_components):
         return components
 
@@ -125,12 +149,20 @@ def build_global_virtual_components(
     bbox = ai_shield_bbox(screen_w, screen_h)
     classifier = {
         "contentType": "ai_shield",
-        "componentType": "MetricCard",
+        "componentType": "Image",
         "text": text,
         "paddleOcrText": text,
         "visualEvidence": "center shield with AI text, circular base, multiple risk-warning metric nodes",
     }
-    option_patch = build_option_patch(record.category, record.key, ai_shield_dataset_from_text(text), classifier)
+    option_patch = build_option_patch(
+        record.category,
+        record.key,
+        ai_shield_dataset_from_text(text),
+        classifier,
+        option_blueprint=library.option_blueprint(record.key),
+        schema_shape=library.option_shape(record.key),
+        bbox=bbox,
+    )
     return [
         {
             "id": "schema_virtual_ai_shield",
@@ -140,6 +172,7 @@ def build_global_virtual_components(
             "title": record.title,
             "category": record.category,
             "categoryName": record.category_name,
+            "schemaShape": library.option_shape(record.key),
             "bbox": bbox,
             "attr": {
                 "x": round(float(bbox["x"]), 2),
@@ -169,6 +202,197 @@ def build_global_virtual_components(
             },
         }
     ]
+
+
+def build_schema_semantic_aggregate_components(nodes: List[Node], library: ComponentLibrary) -> List[Dict[str, Any]]:
+    components: List[Dict[str, Any]] = []
+    used_node_ids: set[str] = set()
+    for record in library.records:
+        schema_shape = library.option_shape(record.key)
+        if schema_shape.get("datasetKind") != "object.bizNodes":
+            continue
+        terms = schema_terms_from_option(library.option_blueprint(record.key))
+        if len(terms) < 3:
+            continue
+        contributors, matched_terms = semantic_contributors_for_terms(nodes, terms, used_node_ids)
+        if not is_strong_semantic_aggregate(contributors, matched_terms, terms):
+            continue
+        option_blueprint = library.option_blueprint(record.key)
+        bbox = semantic_aggregate_bbox(contributors, nodes, option_blueprint)
+        text = " ".join(semantic_text_for_node(node) for node in contributors if semantic_text_for_node(node)).strip()
+        classifier = {
+            "contentType": "semantic_biz_component",
+            "componentType": "Image",
+            "text": text,
+            "paddleOcrText": text,
+            "visualEvidence": f"schema terms matched: {', '.join(sorted(matched_terms))}",
+        }
+        option_patch = build_option_patch(
+            record.category,
+            record.key,
+            {"dimensions": ["name", "value"], "source": []},
+            classifier,
+            option_blueprint=option_blueprint,
+            schema_shape=schema_shape,
+            bbox=bbox,
+        )
+        components.append(
+            {
+                "id": f"schema_virtual_{record.key}_semantic",
+                "nodeId": f"virtual_{record.key}_semantic",
+                "virtual": True,
+                "componentId": record.key,
+                "title": record.title,
+                "category": record.category,
+                "categoryName": record.category_name,
+                "schemaShape": schema_shape,
+                "bbox": bbox,
+                "contributorNodeIds": [node.node_id for node in contributors],
+                "matchedSchemaTerms": sorted(matched_terms),
+                "attr": {
+                    "x": round(float(bbox["x"]), 2),
+                    "y": round(float(bbox["y"]), 2),
+                    "w": round(float(bbox["w"]), 2),
+                    "h": round(float(bbox["h"]), 2),
+                    "offsetX": 0,
+                    "offsetY": 0,
+                    "zIndex": 8,
+                },
+                "chartConfig": {
+                    "key": record.key,
+                    "chartKey": record.chart_key,
+                    "conKey": record.con_key,
+                    "title": record.title,
+                    "category": record.category,
+                    "categoryName": record.category_name,
+                    "chartFrame": record.chart_frame,
+                    "package": infer_package(record.key, record.category),
+                },
+                "optionPatch": option_patch,
+                "dataSource": {
+                    "source": "ocr+schema-semantic-aggregate",
+                    "ocrText": text[:500],
+                    "modelText": text[:500],
+                    "contentType": "semantic_biz_component",
+                },
+            }
+        )
+        used_node_ids.update(node.node_id for node in contributors)
+    return components
+
+
+def schema_terms_from_option(option_blueprint: Dict[str, Any]) -> List[str]:
+    dataset = option_blueprint.get("dataset") if isinstance(option_blueprint, dict) else {}
+    terms: set[str] = set()
+    collect_schema_terms(dataset, terms)
+    return sorted(terms, key=lambda item: (-len(item), item))
+
+
+def collect_schema_terms(value: Any, terms: set[str]) -> None:
+    if isinstance(value, str):
+        text = value.strip()
+        if is_semantic_schema_term(text):
+            terms.add(text)
+        return
+    if isinstance(value, list):
+        for item in value:
+            collect_schema_terms(item, terms)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if key in {"label", "name", "title", "subtitle", "robotName", "statusText"} or key.endswith("Label"):
+                collect_schema_terms(item, terms)
+            elif isinstance(item, (list, dict)):
+                collect_schema_terms(item, terms)
+
+
+def is_semantic_schema_term(text: str) -> bool:
+    if len(text) < 2:
+        return False
+    if not re.search(r"[\u4e00-\u9fff]", text):
+        return False
+    if looks_like_noise(text):
+        return False
+    return text not in {"正常", "异常", "告警", "成功", "失败", "默认", "数据项"}
+
+
+def semantic_contributors_for_terms(
+    nodes: List[Node],
+    terms: List[str],
+    used_node_ids: set[str],
+) -> tuple[List[Node], set[str]]:
+    contributors: List[Node] = []
+    matched_terms: set[str] = set()
+    for node in nodes:
+        if node.node_id in used_node_ids or node.type not in {"Image", "MetricCard", "Title", "Decorate"}:
+            continue
+        text = semantic_text_for_node(node)
+        if not text:
+            continue
+        hits = {term for term in terms if term in text}
+        if not hits:
+            continue
+        contributors.append(node)
+        matched_terms.update(hits)
+    contributors.sort(key=lambda node: (node.bbox.y, node.bbox.x))
+    return contributors, matched_terms
+
+
+def semantic_text_for_node(node: Node) -> str:
+    classifier = node.features.get("contentClassifier") or {}
+    return " ".join(
+        str(classifier.get(key) or "").strip()
+        for key in ["text", "paddleOcrText"]
+        if str(classifier.get(key) or "").strip()
+    )
+
+
+def is_strong_semantic_aggregate(contributors: List[Node], matched_terms: set[str], terms: List[str]) -> bool:
+    if len(contributors) < 2:
+        return False
+    required_unique_terms = max(3, min(5, len(terms) // 2))
+    if len(matched_terms) < required_unique_terms:
+        return False
+    union = union_node_bbox(contributors)
+    if bbox_area(union) <= 0:
+        return False
+    contributor_area = sum(node.bbox.area for node in contributors)
+    return contributor_area / max(1.0, bbox_area(union)) >= 0.08
+
+
+def union_node_bbox(nodes: List[Node]) -> Dict[str, float]:
+    left = min(node.bbox.x for node in nodes)
+    top = min(node.bbox.y for node in nodes)
+    right = max(node.bbox.right for node in nodes)
+    bottom = max(node.bbox.bottom for node in nodes)
+    return {
+        "x": round(left, 2),
+        "y": round(top, 2),
+        "w": round(max(1.0, right - left), 2),
+        "h": round(max(1.0, bottom - top), 2),
+    }
+
+
+def semantic_aggregate_bbox(
+    contributors: List[Node],
+    all_nodes: List[Node],
+    option_blueprint: Dict[str, Any],
+) -> Dict[str, float]:
+    if semantic_aggregate_uses_scene_background(option_blueprint):
+        screen = next((node for node in all_nodes if node.type == "Screen"), None)
+        if screen:
+            return screen.bbox.to_dict()
+    return union_node_bbox(contributors)
+
+
+def semantic_aggregate_uses_scene_background(option_blueprint: Dict[str, Any]) -> bool:
+    visual = option_blueprint.get("visual") if isinstance(option_blueprint, dict) else None
+    if not isinstance(visual, dict):
+        return False
+    background_image = str(visual.get("backgroundImage") or "").strip()
+    if not background_image:
+        return False
+    return bool(visual.get("showBackground", True))
 
 
 def collect_classifier_text(nodes: List[Node]) -> str:
@@ -204,20 +428,394 @@ def ai_shield_bbox(screen_w: float, screen_h: float) -> Dict[str, float]:
     }
 
 
+def repair_component_record_for_schema(
+    node: Node,
+    record: ComponentRecord,
+    library: ComponentLibrary,
+    nodes: List[Node],
+) -> ComponentRecord:
+    classifier = node.features.get("contentClassifier") or {}
+    if node.type not in {"Border", "Panel"} and ocr_items_form_table(ocr_items(classifier)):
+        table_record = library.by_key.get("TableScrollBoard") or library.by_key.get("TablesBasic")
+        if table_record:
+            return table_record
+
+    if should_render_panel_title_as_text(node, record, classifier, nodes):
+        text_record = library.by_key.get("TextCommon")
+        if text_record:
+            return text_record
+    return record
+
+
+def repair_component_bbox_for_schema(
+    node: Node,
+    record: ComponentRecord,
+    classifier: Dict[str, Any],
+    nodes: List[Node],
+) -> Dict[str, float]:
+    if record.key == "TextCommon" and should_render_panel_title_as_text(node, record, classifier, nodes):
+        label_bbox = title_label_bbox_from_ocr_items(ocr_items(classifier), node.bbox.to_dict())
+        if label_bbox:
+            return label_bbox
+    return node.bbox.to_dict()
+
+
+def should_render_panel_title_as_text(
+    node: Node,
+    record: ComponentRecord,
+    classifier: Dict[str, Any],
+    nodes: List[Node],
+) -> bool:
+    if node.type != "Title":
+        return False
+    if record.category not in {"Title", "Decorates", "Texts"}:
+        return False
+    if not containing_panel_for_top_title(node, nodes):
+        return False
+    items = title_like_ocr_items(ocr_items(classifier))
+    if not items:
+        return False
+    text_width = max((float((item.get("bbox") or {}).get("w") or 0) for item in items), default=0.0)
+    return node.bbox.w >= 140 and text_width / max(1.0, node.bbox.w) <= 0.55
+
+
+def containing_panel_for_top_title(node: Node, nodes: List[Node]) -> Optional[Node]:
+    title_bbox = node.bbox.to_dict()
+    for panel in nodes:
+        if panel.node_id == node.node_id or panel.type not in {"Border", "Panel"}:
+            continue
+        panel_bbox = panel.bbox.to_dict()
+        if bbox_containment(panel_bbox, title_bbox) < 0.48 and bbox_iou(panel_bbox, title_bbox) < 0.02:
+            continue
+        panel_top = panel.bbox.y
+        if node.bbox.y <= panel_top + max(58.0, panel.bbox.h * 0.24):
+            return panel
+    return None
+
+
+def title_like_ocr_items(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    filtered = []
+    for item in items:
+        text = str(item.get("text") or "").strip()
+        if not text or looks_like_axis_or_legend_text(text):
+            continue
+        if NUMBER_RE.fullmatch(text) or DATE_LABEL_RE.fullmatch(text):
+            continue
+        if len(token_items(text)) > 3:
+            continue
+        filtered.append(item)
+    return filtered
+
+
+def title_label_bbox_from_ocr_items(
+    items: List[Dict[str, Any]],
+    fallback: Dict[str, float],
+) -> Optional[Dict[str, float]]:
+    filtered = title_like_ocr_items(items)
+    if not filtered:
+        return None
+    left = min(float((item.get("bbox") or {}).get("x") or 0) for item in filtered)
+    top = min(float((item.get("bbox") or {}).get("y") or 0) for item in filtered)
+    right = max(float((item.get("bbox") or {}).get("x") or 0) + float((item.get("bbox") or {}).get("w") or 0) for item in filtered)
+    bottom = max(float((item.get("bbox") or {}).get("y") or 0) + float((item.get("bbox") or {}).get("h") or 0) for item in filtered)
+    pad_x = max(8.0, (right - left) * 0.18)
+    pad_y = max(4.0, (bottom - top) * 0.28)
+    x = max(float(fallback.get("x") or 0), left - pad_x)
+    y = max(float(fallback.get("y") or 0), top - pad_y)
+    max_right = float(fallback.get("x") or 0) + float(fallback.get("w") or 0)
+    max_bottom = float(fallback.get("y") or 0) + float(fallback.get("h") or 0)
+    return {
+        "x": round(x, 2),
+        "y": round(y, 2),
+        "w": round(max(20.0, min(max_right, right + pad_x) - x), 2),
+        "h": round(max(18.0, min(max_bottom, bottom + pad_y) - y), 2),
+    }
+
+
+def build_virtual_panel_title_components(
+    nodes: List[Node],
+    library: ComponentLibrary,
+    existing_components: List[Dict[str, Any]],
+) -> List[Dict[str, Any]]:
+    record = library.by_key.get("TextCommon")
+    if not record:
+        return []
+    components: List[Dict[str, Any]] = []
+    for node in nodes:
+        if node.type not in {"Border", "Panel"}:
+            continue
+        if panel_has_existing_title(node, existing_components):
+            continue
+        title_items = panel_top_title_items(node)
+        if not title_items:
+            continue
+        bbox = title_label_bbox_from_ocr_items(title_items, node.bbox.to_dict())
+        if not bbox:
+            continue
+        text = " ".join(str(item.get("text") or "").strip() for item in title_items if str(item.get("text") or "").strip())
+        classifier = {"text": text, "paddleOcrText": text, "paddleOcrItems": title_items, "contentType": "title"}
+        option_patch = build_option_patch(
+            record.category,
+            record.key,
+            {"dimensions": ["name", "value"], "source": [{"name": text, "value": 0}]},
+            classifier,
+            option_blueprint=library.option_blueprint(record.key),
+            schema_shape=library.option_shape(record.key),
+            bbox=bbox,
+        )
+        components.append(
+            {
+                "id": f"schema_{node.node_id}_title",
+                "nodeId": f"{node.node_id}_title",
+                "sourceNodeId": node.node_id,
+                "virtual": True,
+                "componentId": record.key,
+                "title": record.title,
+                "category": record.category,
+                "categoryName": record.category_name,
+                "schemaShape": library.option_shape(record.key),
+                "bbox": bbox,
+                "attr": {
+                    "x": round(float(bbox["x"]), 2),
+                    "y": round(float(bbox["y"]), 2),
+                    "w": round(float(bbox["w"]), 2),
+                    "h": round(float(bbox["h"]), 2),
+                    "offsetX": 0,
+                    "offsetY": 0,
+                    "zIndex": 20,
+                },
+                "chartConfig": {
+                    "key": record.key,
+                    "chartKey": record.chart_key,
+                    "conKey": record.con_key,
+                    "title": record.title,
+                    "category": record.category,
+                    "categoryName": record.category_name,
+                    "chartFrame": record.chart_frame,
+                    "package": infer_package(record.key, record.category),
+                },
+                "optionPatch": option_patch,
+                "dataSource": {
+                    "source": "ocr+layout+panel-title",
+                    "ocrText": text,
+                    "modelText": text,
+                    "contentType": "title",
+                },
+            }
+        )
+    return components
+
+
+def panel_has_existing_title(node: Node, components: List[Dict[str, Any]]) -> bool:
+    panel_bbox = node.bbox.to_dict()
+    top_band = {
+        "x": node.bbox.x,
+        "y": node.bbox.y,
+        "w": node.bbox.w,
+        "h": max(44.0, min(node.bbox.h * 0.24, 72.0)),
+    }
+    for component in components:
+        category = str(component.get("category") or "")
+        if category not in {"Title", "Texts", "Decorates"}:
+            continue
+        bbox = component.get("bbox") or {}
+        if bbox_containment(panel_bbox, bbox) < 0.25 and bbox_iou(panel_bbox, bbox) < 0.01:
+            continue
+        if bbox_iou(top_band, bbox) > 0.01 or bbox_containment(top_band, bbox) >= 0.25:
+            return True
+    return False
+
+
+def panel_top_title_items(node: Node) -> List[Dict[str, Any]]:
+    classifier = node.features.get("contentClassifier") or {}
+    rows = ocr_item_rows(ocr_items(classifier))
+    top_limit = node.bbox.y + max(38.0, min(node.bbox.h * 0.16, 54.0))
+    for row in rows[:4]:
+        row_top = min(float((item.get("bbox") or {}).get("y") or 0) for item in row)
+        if row_top > top_limit:
+            continue
+        filtered = title_like_ocr_items(row)
+        if not filtered:
+            continue
+        text = " ".join(str(item.get("text") or "") for item in filtered)
+        if looks_like_table_header_text(text):
+            continue
+        if len(filtered) <= 2:
+            return filtered
+    return []
+
+
+def looks_like_table_header_text(text: str) -> bool:
+    tokens = [str(item.get("text") or "") for item in token_items(text)]
+    if len(tokens) < 2:
+        return False
+    header_hits = sum(1 for token in tokens if re.search(r"排名|排行|序号|名称|服务|次数|数值|状态|时间|单位|云池", token))
+    return header_hits >= 2
+
+
+def build_repeated_metric_components(
+    node: Node,
+    record: ComponentRecord,
+    library: ComponentLibrary,
+    classifier: Dict[str, Any],
+) -> List[Dict[str, Any]]:
+    if node.type != "MetricCard" or record.category != "Mores":
+        return []
+    option_blueprint = library.option_blueprint(record.key)
+    schema_shape = library.option_shape(record.key)
+    if str(schema_shape.get("datasetKind") or dataset_kind(option_blueprint)) != "number":
+        return []
+
+    clusters = repeated_metric_clusters(node, ocr_items(classifier))
+    if len(clusters) < 2:
+        return []
+
+    components: List[Dict[str, Any]] = []
+    for index, cluster in enumerate(clusters):
+        cluster_classifier = dict(classifier)
+        cluster_text = " ".join(str(item.get("text") or "") for item in cluster["items"]).strip()
+        cluster_classifier["text"] = cluster_text
+        cluster_classifier["paddleOcrText"] = cluster_text
+        cluster_classifier["paddleOcrItems"] = cluster["items"]
+        dataset = chart_dataset(
+            [
+                {
+                    "name": cluster.get("label") or f"指标{index + 1}",
+                    "value": cluster.get("value", 0),
+                    "raw": cluster.get("raw", ""),
+                }
+            ]
+        )
+        bbox = cluster["bbox"]
+        option_patch = build_option_patch(
+            record.category,
+            record.key,
+            dataset,
+            cluster_classifier,
+            option_blueprint=option_blueprint,
+            schema_shape=schema_shape,
+            bbox=bbox,
+        )
+        components.append(
+            {
+                "id": f"schema_{node.node_id}_metric_{index + 1}",
+                "nodeId": f"{node.node_id}_metric_{index + 1}",
+                "sourceNodeId": node.node_id,
+                "virtual": True,
+                "componentId": record.key,
+                "title": record.title,
+                "category": record.category,
+                "categoryName": record.category_name,
+                "schemaShape": schema_shape,
+                "bbox": bbox,
+                "attr": {
+                    "x": round(float(bbox["x"]), 2),
+                    "y": round(float(bbox["y"]), 2),
+                    "w": round(float(bbox["w"]), 2),
+                    "h": round(float(bbox["h"]), 2),
+                    "offsetX": 0,
+                    "offsetY": 0,
+                    "zIndex": z_index_for_node(node.type),
+                },
+                "chartConfig": {
+                    "key": record.key,
+                    "chartKey": record.chart_key,
+                    "conKey": record.con_key,
+                    "title": record.title,
+                    "category": record.category,
+                    "categoryName": record.category_name,
+                    "chartFrame": record.chart_frame,
+                    "package": infer_package(record.key, record.category),
+                },
+                "optionPatch": option_patch,
+                "dataSource": {
+                    "source": "ocr+layout+metric-split",
+                    "ocrText": cluster_text,
+                    "modelText": cluster_text,
+                    "contentType": "metric_card",
+                },
+            }
+        )
+    return components
+
+
+def repeated_metric_clusters(node: Node, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    percent_items = [
+        item
+        for item in items
+        if NUMBER_RE.fullmatch(str(item.get("text") or "").strip()) and str(item.get("text") or "").strip().endswith("%")
+    ]
+    if len(percent_items) < 2 or node.bbox.w / max(1.0, node.bbox.h) < 1.7:
+        return []
+    percent_items.sort(key=lambda item: bbox_center(item.get("bbox") or {})[0])
+    centers = [bbox_center(item.get("bbox") or {})[0] for item in percent_items]
+    if min((centers[i + 1] - centers[i] for i in range(len(centers) - 1)), default=0.0) < node.bbox.w * 0.12:
+        return []
+
+    boundaries = [node.bbox.x]
+    boundaries.extend((centers[i] + centers[i + 1]) / 2.0 for i in range(len(centers) - 1))
+    boundaries.append(node.bbox.right)
+
+    clusters: List[Dict[str, Any]] = []
+    for index, percent_item in enumerate(percent_items):
+        left = boundaries[index]
+        right = boundaries[index + 1]
+        cluster_items = [
+            item
+            for item in items
+            if left <= bbox_center(item.get("bbox") or {})[0] <= right
+        ]
+        text_tokens = [str(item.get("text") or "").strip() for item in cluster_items if str(item.get("text") or "").strip()]
+        labels = [token for token in text_tokens if not NUMBER_RE.fullmatch(token)]
+        raw = str(percent_item.get("text") or "")
+        inset = max(2.0, (right - left) * 0.04)
+        bbox = {
+            "x": round(left + inset, 2),
+            "y": round(node.bbox.y, 2),
+            "w": round(max(24.0, right - left - inset * 2.0), 2),
+            "h": round(node.bbox.h, 2),
+        }
+        clusters.append(
+            {
+                "bbox": bbox,
+                "items": sorted(cluster_items, key=lambda item: (float((item.get("bbox") or {}).get("y") or 0), float((item.get("bbox") or {}).get("x") or 0))),
+                "label": labels[-1] if labels else "",
+                "value": parse_bar_number(raw),
+                "raw": raw,
+            }
+        )
+    return clusters
+
+
+def bbox_center(bbox: Dict[str, Any]) -> tuple[float, float]:
+    return (
+        float(bbox.get("x") or 0) + float(bbox.get("w") or 0) / 2.0,
+        float(bbox.get("y") or 0) + float(bbox.get("h") or 0) / 2.0,
+    )
+
+
 def build_virtual_inner_component(node: Node, nodes: List[Node], library: ComponentLibrary) -> Optional[Dict[str, Any]]:
     if node.type not in {"Panel", "Border"}:
-        return None
-    if has_inner_content_node(node, nodes):
         return None
 
     classifier = node.features.get("contentClassifier") or {}
     record = infer_virtual_content_record(classifier, library)
     if not record:
         return None
+    if has_inner_content_node(node, nodes, record.category):
+        return None
 
-    bbox = virtual_content_bbox(node, record.category)
+    bbox = virtual_content_bbox(node, record.category, classifier)
     dataset = infer_dataset(node, classifier, record.category)
-    option_patch = build_option_patch(record.category, record.key, dataset, classifier)
+    option_patch = build_option_patch(
+        record.category,
+        record.key,
+        dataset,
+        classifier,
+        option_blueprint=library.option_blueprint(record.key),
+        schema_shape=library.option_shape(record.key),
+        bbox=bbox,
+    )
     return {
         "id": f"schema_{node.node_id}_inner",
         "nodeId": f"{node.node_id}_inner",
@@ -227,6 +825,7 @@ def build_virtual_inner_component(node: Node, nodes: List[Node], library: Compon
         "title": record.title,
         "category": record.category,
         "categoryName": record.category_name,
+        "schemaShape": library.option_shape(record.key),
         "bbox": bbox,
         "attr": {
             "x": round(float(bbox["x"]), 2),
@@ -259,10 +858,12 @@ def build_virtual_inner_component(node: Node, nodes: List[Node], library: Compon
     }
 
 
-def has_inner_content_node(node: Node, nodes: List[Node]) -> bool:
+def has_inner_content_node(node: Node, nodes: List[Node], expected_category: str = "") -> bool:
     outer = node.bbox.to_dict()
     for child in nodes:
         if child.node_id == node.node_id or child.type not in INNER_CONTENT_TYPES:
+            continue
+        if expected_category == "Tables" and child.type != "Table":
             continue
         inner = child.bbox.to_dict()
         if bbox_containment(outer, inner) >= 0.82 and bbox_area(outer) / max(1.0, bbox_area(inner)) >= 1.12:
@@ -279,9 +880,12 @@ def infer_virtual_content_record(classifier: Dict[str, Any], library: ComponentL
     )
     visual_form = str(classifier.get("llmVisualForm") or "").lower()
     llm_component_id = str(classifier.get("llmComponentId") or "")
+    items = ocr_items(classifier)
 
     preferred = ""
     if "任务名称" in text and "责任单位" in text:
+        preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
+    elif ocr_items_form_table(items):
         preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
     elif looks_like_simple_scroll_table(text):
         preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
@@ -303,12 +907,15 @@ def infer_virtual_content_record(classifier: Dict[str, Any], library: ComponentL
     return library.by_key.get(preferred) if preferred else None
 
 
-def virtual_content_bbox(node: Node, category: str) -> Dict[str, float]:
+def virtual_content_bbox(node: Node, category: str, classifier: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
     x = node.bbox.x + max(12.0, node.bbox.w * 0.04)
     y = node.bbox.y + max(44.0, node.bbox.h * 0.15)
     w = node.bbox.w - max(24.0, node.bbox.w * 0.08)
     h = node.bbox.h - max(66.0, node.bbox.h * 0.24)
     if category == "Tables":
+        table_bbox = table_bbox_from_ocr_items(node, ocr_items(classifier or {}))
+        if table_bbox:
+            return table_bbox
         y = node.bbox.y + max(36.0, node.bbox.h * 0.08)
         h = node.bbox.h - max(44.0, node.bbox.h * 0.14)
     return {"x": round(x, 2), "y": round(y, 2), "w": round(max(20.0, w), 2), "h": round(max(20.0, h), 2)}
@@ -330,6 +937,10 @@ def virtual_content_type(category: str, component_id: str) -> str:
 
 def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     suppressed: set[str] = set()
+    for item in components:
+        if is_chart_text_artifact(item, components):
+            suppressed.add(str(item.get("id") or ""))
+
     for outer in components:
         outer_id = str(outer.get("id") or "")
         if outer_id in suppressed:
@@ -337,6 +948,10 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
         outer_bbox = outer.get("bbox") or {}
         outer_category = str(outer.get("category") or "")
         outer_content_type = str(((outer.get("dataSource") or {}).get("contentType")) or "")
+        outer_contributors = {
+            str(item)
+            for item in outer.get("contributorNodeIds", [])
+        } if isinstance(outer.get("contributorNodeIds"), list) else set()
 
         if outer_category == "Borders" and is_container_only_border(outer, components):
             suppressed.add(outer_id)
@@ -348,6 +963,10 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
                 continue
             inner_bbox = inner.get("bbox") or {}
             inner_category = str(inner.get("category") or "")
+            inner_node_id = str(inner.get("sourceNodeId") or inner.get("nodeId") or "")
+            if outer_contributors and inner_node_id in outer_contributors:
+                suppressed.add(inner_id)
+                continue
             contain = bbox_containment(outer_bbox, inner_bbox)
             iou = bbox_iou(outer_bbox, inner_bbox)
             area_ratio = bbox_area(outer_bbox) / max(1.0, bbox_area(inner_bbox))
@@ -358,6 +977,17 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
                 continue
 
             if contain < 0.82 or area_ratio < 1.22:
+                continue
+
+            if outer_category == "Tables" and inner_category == "Tables":
+                loser = weaker_table_duplicate(outer, inner)
+                suppressed.add(str(loser.get("id") or ""))
+                if str(loser.get("id") or "") == outer_id:
+                    break
+                continue
+
+            if outer_category == "Tables" and inner_category != "Tables":
+                suppressed.add(inner_id)
                 continue
 
             outer_is_visual_container = outer_category in CONTENT_CATEGORIES and outer_content_type in {
@@ -404,6 +1034,69 @@ def is_container_only_border(border: Dict[str, Any], components: List[Dict[str, 
     return False
 
 
+def is_chart_text_artifact(component: Dict[str, Any], components: List[Dict[str, Any]]) -> bool:
+    category = str(component.get("category") or "")
+    if not is_string_component(component) and category not in {"Title", "Texts", "Decorates", "Inputs"}:
+        return False
+    text = string_component_text(component)
+    if not looks_like_axis_or_legend_text(text):
+        return False
+
+    bbox = component.get("bbox") or {}
+    for chart in components:
+        if chart is component:
+            continue
+        if str(chart.get("category") or "") not in {"Bars", "Lines", "Pies", "Scatters", "Areas", "Funnels", "Mores"}:
+            continue
+        chart_bbox = chart.get("bbox") or {}
+        if bbox_containment(chart_bbox, bbox) >= 0.52:
+            return True
+        if is_tight_chart_bottom_text(chart_bbox, bbox):
+            return True
+    return False
+
+
+def is_string_component(component: Dict[str, Any]) -> bool:
+    shape = component.get("schemaShape") if isinstance(component.get("schemaShape"), dict) else {}
+    if shape.get("datasetKind") == "string":
+        return True
+    dataset = (component.get("optionPatch") or {}).get("dataset") if isinstance(component.get("optionPatch"), dict) else None
+    return isinstance(dataset, str)
+
+
+def string_component_text(component: Dict[str, Any]) -> str:
+    patch = component.get("optionPatch") if isinstance(component.get("optionPatch"), dict) else {}
+    dataset = patch.get("dataset")
+    if isinstance(dataset, str):
+        return dataset
+    source = component.get("dataSource") if isinstance(component.get("dataSource"), dict) else {}
+    return str(source.get("ocrText") or source.get("modelText") or "")
+
+
+def looks_like_axis_or_legend_text(text: str) -> bool:
+    tokens = token_items(text)
+    if len(tokens) >= 4:
+        return True
+    numbers = [item for item in tokens if item["type"] in {"number", "date"}]
+    labels = [item for item in tokens if item["type"] == "label"]
+    if len(numbers) >= 2 and len(labels) >= 1:
+        return True
+    return len(str(text or "")) >= 18 and len(labels) >= 2
+
+
+def is_tight_chart_bottom_text(chart_bbox: Dict[str, Any], text_bbox: Dict[str, Any]) -> bool:
+    chart_left = float(chart_bbox.get("x") or 0)
+    chart_right = chart_left + float(chart_bbox.get("w") or 0)
+    chart_bottom = float(chart_bbox.get("y") or 0) + float(chart_bbox.get("h") or 0)
+    text_left = float(text_bbox.get("x") or 0)
+    text_right = text_left + float(text_bbox.get("w") or 0)
+    text_top = float(text_bbox.get("y") or 0)
+    text_height = float(text_bbox.get("h") or 0)
+    overlap_w = max(0.0, min(chart_right, text_right) - max(chart_left, text_left))
+    text_w = max(1.0, float(text_bbox.get("w") or 0))
+    return overlap_w / text_w >= 0.58 and -8.0 <= text_top - chart_bottom <= max(24.0, text_height * 0.9)
+
+
 def bbox_area(bbox: Dict[str, Any]) -> float:
     return max(0.0, float(bbox.get("w") or 0)) * max(0.0, float(bbox.get("h") or 0))
 
@@ -433,7 +1126,7 @@ def bbox_intersection(a: Dict[str, Any], b: Dict[str, Any]) -> float:
 def same_component_family(left: str, right: str) -> bool:
     if left == right:
         return True
-    chart_categories = CONTENT_CATEGORIES - {"Tables", "Maps", "Biz"}
+    chart_categories = CONTENT_CATEGORIES - {"Tables", "Maps", "Biz", "Three"}
     return left in chart_categories and right in chart_categories
 
 
@@ -449,14 +1142,222 @@ def weaker_duplicate(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, A
     return left if left_z < right_z else right
 
 
+def weaker_table_duplicate(left: Dict[str, Any], right: Dict[str, Any]) -> Dict[str, Any]:
+    left_source = str((left.get("dataSource") or {}).get("source") or "")
+    right_source = str((right.get("dataSource") or {}).get("source") or "")
+    if "container-repair" in left_source and "container-repair" not in right_source:
+        return right
+    if "container-repair" in right_source and "container-repair" not in left_source:
+        return left
+
+    left_rows = table_patch_row_count(left)
+    right_rows = table_patch_row_count(right)
+    if left_rows != right_rows:
+        return left if left_rows < right_rows else right
+    return weaker_duplicate(left, right)
+
+
+def table_patch_row_count(component: Dict[str, Any]) -> int:
+    patch = component.get("optionPatch") if isinstance(component.get("optionPatch"), dict) else {}
+    dataset = patch.get("dataset")
+    if isinstance(dataset, list):
+        return len(dataset)
+    if isinstance(dataset, dict):
+        source = dataset.get("source")
+        if isinstance(source, list):
+            return len(source)
+    return 0
+
+
 def z_index_for_node(node_type: str) -> int:
     if node_type in {"Panel", "Border", "Decorate"}:
         return 1
-    if node_type in {"Chart", "Table", "Map", "MetricCard", "Filter"}:
+    if node_type in {"Chart", "Table", "Map", "MetricCard", "Filter", "Image"}:
         return 10
     if node_type == "Title":
         return 20
     return 10
+
+
+def ocr_items(classifier: Dict[str, Any]) -> List[Dict[str, Any]]:
+    raw = classifier.get("paddleOcrItems") if isinstance(classifier, dict) else None
+    if not isinstance(raw, list):
+        return []
+    items: List[Dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        bbox = item.get("bbox") if isinstance(item.get("bbox"), dict) else None
+        text = str(item.get("text") or "").strip()
+        if not text or not bbox:
+            continue
+        items.append({"text": text, "bbox": bbox, "score": item.get("score")})
+    return items
+
+
+def ocr_item_rows(items: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+    clean = [
+        item
+        for item in items
+        if isinstance(item.get("bbox"), dict) and str(item.get("text") or "").strip()
+    ]
+    if not clean:
+        return []
+    heights = sorted(float((item.get("bbox") or {}).get("h") or 0) for item in clean)
+    median_h = heights[len(heights) // 2] if heights else 12.0
+    tolerance = max(8.0, median_h * 0.72)
+    rows: List[List[Dict[str, Any]]] = []
+    for item in sorted(clean, key=lambda entry: (bbox_center(entry.get("bbox") or {})[1], bbox_center(entry.get("bbox") or {})[0])):
+        _, cy = bbox_center(item.get("bbox") or {})
+        target: Optional[List[Dict[str, Any]]] = None
+        for row in rows:
+            row_cy = sum(bbox_center(entry.get("bbox") or {})[1] for entry in row) / max(1, len(row))
+            if abs(cy - row_cy) <= tolerance:
+                target = row
+                break
+        if target is None:
+            rows.append([item])
+        else:
+            target.append(item)
+    for row in rows:
+        row.sort(key=lambda entry: bbox_center(entry.get("bbox") or {})[0])
+    rows.sort(key=lambda row: min(float((item.get("bbox") or {}).get("y") or 0) for item in row))
+    return rows
+
+
+def ocr_items_form_table(items: List[Dict[str, Any]]) -> bool:
+    rows = table_candidate_rows(items)
+    if len(rows) < 3:
+        return False
+    column_centers = table_column_centers(rows)
+    if len(column_centers) < 3:
+        return False
+    if not any(len(row) >= 3 for row in rows):
+        return False
+    populated_rows = 0
+    for row in rows:
+        occupied = {
+            nearest_column_index(bbox_center(item.get("bbox") or {})[0], column_centers)
+            for item in row
+        }
+        if len(occupied) >= 2:
+            populated_rows += 1
+    return populated_rows >= 3
+
+
+def table_candidate_rows(items: List[Dict[str, Any]]) -> List[List[Dict[str, Any]]]:
+    rows = ocr_item_rows(items)
+    if not rows:
+        return []
+    # A panel title is usually a single short text row above the table header.
+    if len(rows) >= 2 and len(rows[0]) <= 1 and len(rows[1]) >= 2:
+        return rows[1:]
+    return rows
+
+
+def table_column_centers(rows: List[List[Dict[str, Any]]]) -> List[float]:
+    centers: List[float] = []
+    for row in rows:
+        if len(row) < 2:
+            continue
+        centers.extend(bbox_center(item.get("bbox") or {})[0] for item in row)
+    if not centers:
+        return []
+    centers.sort()
+    clusters: List[List[float]] = []
+    tolerance = max(34.0, (max(centers) - min(centers)) / 16.0)
+    for center in centers:
+        if not clusters or abs(center - (sum(clusters[-1]) / len(clusters[-1]))) > tolerance:
+            clusters.append([center])
+        else:
+            clusters[-1].append(center)
+    return [sum(cluster) / len(cluster) for cluster in clusters if len(cluster) >= 2 or len(clusters) <= 4]
+
+
+def nearest_column_index(center: float, columns: List[float]) -> int:
+    if not columns:
+        return 0
+    return min(range(len(columns)), key=lambda index: abs(center - columns[index]))
+
+
+def table_bbox_from_ocr_items(node: Node, items: List[Dict[str, Any]]) -> Optional[Dict[str, float]]:
+    rows = table_candidate_rows(items)
+    if len(rows) < 2:
+        return None
+    selected = [item for row in rows for item in row]
+    left = min(float((item.get("bbox") or {}).get("x") or 0) for item in selected)
+    top = min(float((item.get("bbox") or {}).get("y") or 0) for item in selected)
+    right = max(float((item.get("bbox") or {}).get("x") or 0) + float((item.get("bbox") or {}).get("w") or 0) for item in selected)
+    bottom = max(float((item.get("bbox") or {}).get("y") or 0) + float((item.get("bbox") or {}).get("h") or 0) for item in selected)
+    pad_x = max(16.0, node.bbox.w * 0.035)
+    pad_y = 8.0
+    x = max(node.bbox.x, left - pad_x)
+    y = max(node.bbox.y, top - pad_y)
+    max_right = min(node.bbox.right, right + pad_x)
+    max_bottom = min(node.bbox.bottom, bottom + pad_y)
+    return {
+        "x": round(x, 2),
+        "y": round(y, 2),
+        "w": round(max(24.0, max_right - x), 2),
+        "h": round(max(24.0, max_bottom - y), 2),
+    }
+
+
+def table_dataset_from_ocr_items(items: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    rows = table_candidate_rows(items)
+    if len(rows) < 2:
+        return None
+    columns = table_column_centers(rows)
+    if len(columns) < 2:
+        return None
+
+    header_index = 0
+    for index, row in enumerate(rows[:3]):
+        non_numeric = sum(1 for item in row if not NUMBER_RE.fullmatch(str(item.get("text") or "")))
+        if len(row) >= 2 and non_numeric >= max(1, len(row) - 1):
+            header_index = index
+            break
+
+    header_cells = assign_row_to_columns(rows[header_index], columns)
+    headers = [cell or f"字段{index + 1}" for index, cell in enumerate(header_cells)]
+    body_rows = rows[header_index + 1 :]
+    if len(body_rows) < 1:
+        return None
+
+    dimensions = [
+        {"key": f"col_{index + 1}", "title": header, "width": inferred_column_width(index, headers)}
+        for index, header in enumerate(headers)
+    ]
+    source = []
+    for row in body_rows[:12]:
+        cells = assign_row_to_columns(row, columns)
+        if headers and re.search(r"排名|排行|序号", headers[0]) and not cells[0]:
+            cells[0] = str(len(source) + 1)
+        if sum(1 for cell in cells if cell) < 2:
+            continue
+        source.append({f"col_{index + 1}": cells[index] if index < len(cells) else "" for index in range(len(headers))})
+    if not source:
+        return None
+    return {"dimensions": dimensions, "source": source}
+
+
+def assign_row_to_columns(row: List[Dict[str, Any]], columns: List[float]) -> List[str]:
+    cells: List[List[str]] = [[] for _ in columns]
+    for item in sorted(row, key=lambda entry: bbox_center(entry.get("bbox") or {})[0]):
+        index = nearest_column_index(bbox_center(item.get("bbox") or {})[0], columns)
+        cells[index].append(str(item.get("text") or "").strip())
+    return [" ".join(cell).strip() for cell in cells]
+
+
+def inferred_column_width(index: int, headers: List[str]) -> float:
+    title = headers[index] if index < len(headers) else ""
+    if re.search(r"名称|服务|任务|标题|内容", title):
+        return 1.45
+    if re.search(r"时间|日期", title):
+        return 1.35
+    if re.search(r"次数|数值|数量|排名|状态|云", title):
+        return 0.9
+    return 1.0
 
 
 def infer_dataset(node: Node, classifier: Dict[str, Any], category: str) -> Dict[str, Any]:
@@ -493,6 +1394,10 @@ def infer_dataset(node: Node, classifier: Dict[str, Any], category: str) -> Dict
         ]
     ).strip()
     items = classifier.get("paddleOcrItems") if isinstance(classifier.get("paddleOcrItems"), list) else []
+    if category == "Tables":
+        ocr_table = table_dataset_from_ocr_items(ocr_items(classifier))
+        if ocr_table:
+            return ocr_table
     item_texts = [str(item.get("text") or "") for item in items if isinstance(item, dict)]
     source_text = " ".join(item_texts) or text
     pairs = typed_pairs(source_text, category, content_type)
@@ -695,17 +1600,43 @@ def build_option_patch(
     component_id: str,
     dataset: Dict[str, Any],
     classifier: Dict[str, Any],
+    option_blueprint: Optional[Dict[str, Any]] = None,
+    schema_shape: Optional[Dict[str, Any]] = None,
+    bbox: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    if category in {"Borders", "Decorates", "FlowChart", "Three"}:
+    option_blueprint = option_blueprint or {}
+    if category in {"Borders", "FlowChart", "Three"}:
+        return {}
+    if category == "Decorates" and dataset_kind(option_blueprint) == "none":
+        return {}
+    if option_blueprint and "dataset" not in option_blueprint:
         return {}
     if component_id == "AIShield":
-        return ai_shield_option_patch(dataset)
+        source_dataset = dataset
+        if not (isinstance(source_dataset, dict) and isinstance(source_dataset.get("nodes"), list)):
+            source_dataset = ai_shield_dataset_from_text(classifier_text(classifier))
+        return ai_shield_option_patch(source_dataset)
+    if component_id == "AIRobot":
+        return ai_robot_option_patch(dataset, classifier, option_blueprint)
     if component_id == "TableScrollBoard":
         return table_scroll_board_option_patch(dataset)
-    patch: Dict[str, Any] = {"dataset": dataset}
+
+    adapted_dataset = adapt_dataset_to_component_option(
+        component_id,
+        category,
+        dataset,
+        classifier,
+        option_blueprint,
+        schema_shape or {},
+    )
+    patch: Dict[str, Any] = {"dataset": adapted_dataset}
     title_text = first_title_text(classifier)
-    if title_text and component_id in {"title1", "TextCommon", "TextGradient"}:
+    if title_text and (
+        component_id in {"title1", "TextCommon", "TextGradient", "TextBarrage", "InputsInput"}
+        or dataset_kind(option_blueprint or {}) == "string"
+    ):
         patch["dataset"] = title_text
+    patch = apply_string_component_style_patch(patch, option_blueprint or {}, schema_shape or {}, bbox or {})
     if category == "Mores" and "radarIndicator" in dataset:
         patch["radar"] = {"indicator": dataset["radarIndicator"]}
     if component_id == "LineGradientSingle":
@@ -737,6 +1668,429 @@ def build_option_patch(
             }
         ]
     return patch
+
+
+def apply_string_component_style_patch(
+    patch: Dict[str, Any],
+    option_blueprint: Dict[str, Any],
+    schema_shape: Dict[str, Any],
+    bbox: Dict[str, Any],
+) -> Dict[str, Any]:
+    if str(schema_shape.get("datasetKind") or dataset_kind(option_blueprint)) != "string":
+        return patch
+    text = str(patch.get("dataset") or "")
+    if not text:
+        return patch
+    height = numeric_value(bbox.get("h"), None)
+    width = numeric_value(bbox.get("w"), None)
+    if not height or height <= 0:
+        return patch
+
+    next_patch = dict(patch)
+    if "fontSize" in option_blueprint:
+        default_size = numeric_value(option_blueprint.get("fontSize"), 20.0) or 20.0
+        next_patch["fontSize"] = adaptive_text_size(text, width, height, default_size, height_ratio=0.56)
+    if "textSize" in option_blueprint:
+        default_size = numeric_value(option_blueprint.get("textSize"), 20.0) or 20.0
+        next_patch["textSize"] = adaptive_text_size(text, width, height, default_size, height_ratio=0.46)
+    if "letterSpacing" in option_blueprint:
+        next_patch["letterSpacing"] = 0
+    return next_patch
+
+
+def adaptive_text_size(
+    text: str,
+    width: Optional[float],
+    height: float,
+    default_size: float,
+    height_ratio: float,
+) -> int:
+    size_by_height = max(10.0, height * height_ratio)
+    size_by_width = default_size
+    if width and width > 0:
+        units = visual_text_units(text)
+        if units > 0:
+            size_by_width = max(10.0, width / units * 0.88)
+    return int(round(max(10.0, min(default_size, size_by_height, size_by_width))))
+
+
+def visual_text_units(text: str) -> float:
+    units = 0.0
+    for char in str(text or ""):
+        if char.isspace():
+            units += 0.35
+        elif re.match(r"[\u4e00-\u9fff]", char):
+            units += 1.0
+        elif char.isupper() or char.isdigit():
+            units += 0.62
+        else:
+            units += 0.54
+    return max(1.0, units)
+
+
+def adapt_dataset_to_component_option(
+    component_id: str,
+    category: str,
+    dataset: Dict[str, Any],
+    classifier: Dict[str, Any],
+    option_blueprint: Dict[str, Any],
+    schema_shape: Dict[str, Any],
+) -> Any:
+    if "dataset" not in option_blueprint:
+        return dataset
+    default_dataset = option_blueprint.get("dataset")
+    kind = str(schema_shape.get("datasetKind") or "")
+
+    if isinstance(default_dataset, str) or kind == "string":
+        return first_title_text(classifier) or classifier_text(classifier)[:80]
+    if isinstance(default_dataset, (int, float)) or kind == "number":
+        return first_dataset_number(dataset, classifier, float(default_dataset or 0))
+    if isinstance(default_dataset, list):
+        rows = normalized_rows(dataset_rows(dataset))
+        if not rows:
+            return deepcopy(default_dataset)
+        return adapt_array_dataset(default_dataset, rows)
+    if not isinstance(default_dataset, dict):
+        return dataset
+
+    if component_id == "Radar" or "radarIndicator" in default_dataset:
+        rows = normalized_rows(dataset_rows(dataset))
+        return radar_dataset(rows) if rows else deepcopy(default_dataset)
+    if "source" in default_dataset and isinstance(default_dataset.get("source"), list):
+        return adapt_source_dataset(default_dataset, dataset, category)
+    if "values" in default_dataset and isinstance(default_dataset.get("values"), list):
+        return adapt_values_dataset(default_dataset, dataset, category)
+    if component_id == "KeySecurity3D":
+        return key_security_dataset_patch(default_dataset, dataset, classifier)
+    if "regions" in default_dataset:
+        return map_region_dataset_patch(default_dataset, dataset)
+    if "markers" in default_dataset:
+        return map_marker_dataset_patch(default_dataset, dataset)
+    if "point" in default_dataset:
+        return map_point_dataset_patch(default_dataset, dataset)
+    if {"xAxis", "yAxis", "seriesData"}.issubset(default_dataset.keys()):
+        return heatmap_dataset_patch(default_dataset, dataset)
+    if "nodes" in default_dataset:
+        return node_object_dataset_patch(default_dataset, dataset)
+    return generic_object_dataset_patch(default_dataset, dataset)
+
+
+def dataset_kind(option_blueprint: Dict[str, Any]) -> str:
+    dataset = option_blueprint.get("dataset") if isinstance(option_blueprint, dict) else None
+    if isinstance(dataset, str):
+        return "string"
+    if isinstance(dataset, (int, float)):
+        return "number"
+    if isinstance(dataset, list):
+        return "array"
+    if isinstance(dataset, dict):
+        if isinstance(dataset.get("source"), list):
+            return "object.source"
+        if isinstance(dataset.get("values"), list):
+            return "object.values"
+        return "object"
+    return "none"
+
+
+def classifier_text(classifier: Dict[str, Any]) -> str:
+    return " ".join(
+        str(classifier.get(key) or "").strip()
+        for key in ["text", "paddleOcrText", "textEvidence", "visualEvidence"]
+        if str(classifier.get(key) or "").strip()
+    )
+
+
+def classifier_visible_text(classifier: Dict[str, Any]) -> str:
+    return " ".join(
+        str(classifier.get(key) or "").strip()
+        for key in ["text", "paddleOcrText"]
+        if str(classifier.get(key) or "").strip()
+    )
+
+
+def dataset_rows(dataset: Any) -> List[Any]:
+    if isinstance(dataset, dict):
+        for key in ["source", "values", "data", "seriesData"]:
+            value = dataset.get(key)
+            if isinstance(value, list):
+                return value
+    if isinstance(dataset, list):
+        return dataset
+    return []
+
+
+def normalized_rows(rows: List[Any]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for index, row in enumerate(rows):
+        if isinstance(row, dict):
+            name = row_label(row, index)
+            value = row_numeric_value(row)
+            next_row = dict(row)
+            next_row["name"] = name
+            next_row["value"] = value
+            out.append(next_row)
+        elif isinstance(row, (list, tuple)):
+            name = str(row[0]) if row else f"指标{index + 1}"
+            value = next((parse_number(str(item)) for item in row if NUMBER_RE.fullmatch(str(item))), 0.0)
+            out.append({"name": name, "value": value})
+        else:
+            out.append({"name": f"指标{index + 1}", "value": numeric_value(row, 0.0)})
+    return out
+
+
+def row_label(row: Dict[str, Any], index: int) -> str:
+    for key in ["name", "product", "label", "title", "type", "year", "productName", "message", "region"]:
+        value = row.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return f"指标{index + 1}"
+
+
+def row_numeric_value(row: Dict[str, Any]) -> float:
+    for key in ["value", "data1", "data", "count", "num", "total", "totalSum", "totalAmount", "percent"]:
+        value = row.get(key)
+        parsed = numeric_value(value, None)
+        if parsed is not None:
+            return parsed
+    for value in row.values():
+        parsed = numeric_value(value, None)
+        if parsed is not None:
+            return parsed
+    return 0.0
+
+
+def numeric_value(value: Any, fallback: Optional[float]) -> Optional[float]:
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    if NUMBER_RE.fullmatch(text):
+        return parse_bar_number(text)
+    match = NUMBER_RE.search(text)
+    return parse_bar_number(match.group(0)) if match else fallback
+
+
+def first_dataset_number(dataset: Dict[str, Any], classifier: Dict[str, Any], fallback: float = 0.0) -> float:
+    rows = normalized_rows(dataset_rows(dataset))
+    if rows:
+        return float(rows[0].get("value") or fallback)
+    text = classifier_text(classifier)
+    match = NUMBER_RE.search(text)
+    return parse_bar_number(match.group(0)) if match else fallback
+
+
+def adapt_source_dataset(default_dataset: Dict[str, Any], dataset: Dict[str, Any], category: str) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    if not rows:
+        return deepcopy(default_dataset)
+    dimensions = default_dataset.get("dimensions") if isinstance(default_dataset.get("dimensions"), list) else []
+    keys = dimension_keys(dimensions)
+    if not keys:
+        keys = ["product", "value"] if category in {"Bars", "Pies", "Lines", "Areas"} else ["name", "value"]
+    source = [source_row_for_keys(keys, row, index) for index, row in enumerate(rows[:24])]
+    return {
+        **deepcopy(default_dataset),
+        "dimensions": deepcopy(dimensions) if dimensions else keys,
+        "source": source,
+    }
+
+
+def source_row_for_keys(keys: List[str], row: Dict[str, Any], index: int) -> Dict[str, Any]:
+    value = float(row.get("value") or 0)
+    out: Dict[str, Any] = {}
+    for key_index, key in enumerate(keys):
+        normalized = key.lower()
+        if key_index == 0 or re.search(r"name|label|title|product|type|year|time|message", normalized):
+            out[key] = row.get(key) or row.get("name") or f"指标{index + 1}"
+        elif key_index == 1 or re.search(r"value|data|count|num|total|amount|sum|percent", normalized):
+            out[key] = row.get(key, value)
+        elif "status" in normalized or "level" in normalized:
+            out[key] = row.get(key) or row.get("status") or "正常"
+        else:
+            scaled = max(0.0, round(value * (0.72 if key_index == 2 else 1.0), 4))
+            out[key] = row.get(key, scaled if re.search(r"\d|data|value", normalized) else "")
+    return out
+
+
+def adapt_values_dataset(default_dataset: Dict[str, Any], dataset: Dict[str, Any], category: str) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    if not rows:
+        return deepcopy(default_dataset)
+    sample = next((item for item in default_dataset.get("values") or [] if isinstance(item, dict)), {})
+    keys = list(sample.keys()) or ["name", "value"]
+    values = [value_row_for_keys(keys, row, index, category) for index, row in enumerate(rows[:24])]
+    return {**deepcopy(default_dataset), "values": values}
+
+
+def value_row_for_keys(keys: List[str], row: Dict[str, Any], index: int, category: str) -> Dict[str, Any]:
+    value = float(row.get("value") or 0)
+    out: Dict[str, Any] = {}
+    for key in keys:
+        normalized = key.lower()
+        if key in {"country", "year", "cylinders"}:
+            out[key] = row.get(key) or ("系列1" if category in {"Lines", "Areas", "Bars"} else row.get("name") or f"系列{index + 1}")
+        elif re.search(r"value|horsepower|count|num|total", normalized):
+            out[key] = row.get(key, value)
+        elif re.search(r"name|type|label|title|product", normalized):
+            out[key] = row.get(key) or row.get("name") or f"指标{index + 1}"
+        elif key in {"x", "y"}:
+            out[key] = row.get(key, index + 1 if key == "x" else value)
+        else:
+            out[key] = row.get(key, "")
+    return out
+
+
+def adapt_array_dataset(default_dataset: List[Any], rows: List[Dict[str, Any]]) -> List[Any]:
+    sample = next((item for item in default_dataset if isinstance(item, dict)), None)
+    if not sample:
+        return [[row.get("name", ""), row.get("value", "")] for row in rows[:12]]
+    keys = list(sample.keys()) or ["name", "value"]
+    return [array_object_row(keys, sample, row, index) for index, row in enumerate(rows[:24])]
+
+
+def array_object_row(keys: List[str], sample: Dict[str, Any], row: Dict[str, Any], index: int) -> Dict[str, Any]:
+    value = float(row.get("value") or 0)
+    out: Dict[str, Any] = {}
+    for key in keys:
+        normalized = key.lower()
+        if re.search(r"name|label|title|product|type|year", normalized):
+            out[key] = row.get(key) or row.get("name") or f"指标{index + 1}"
+        elif re.search(r"value|count|num|total|data|percent", normalized):
+            out[key] = row.get(key, value)
+        else:
+            out[key] = deepcopy(row.get(key, sample.get(key)))
+    return out
+
+
+def dimension_keys(dimensions: List[Any]) -> List[str]:
+    keys: List[str] = []
+    for item in dimensions:
+        if isinstance(item, dict):
+            key = item.get("key") or item.get("name") or item.get("title")
+        else:
+            key = item
+        if key:
+            keys.append(str(key))
+    return keys
+
+
+def map_region_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    regions = out.get("regions") if isinstance(out.get("regions"), list) else []
+    for index, row in enumerate(rows[: len(regions)]):
+        if isinstance(regions[index], dict):
+            regions[index]["name"] = row.get("name") or regions[index].get("name")
+            regions[index]["value"] = row.get("value", regions[index].get("value"))
+    return out
+
+
+def map_marker_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    markers = out.get("markers") if isinstance(out.get("markers"), list) else []
+    for index, row in enumerate(rows[: len(markers)]):
+        if isinstance(markers[index], dict):
+            markers[index]["name"] = row.get("name") or markers[index].get("name")
+            markers[index]["value"] = row.get("value", markers[index].get("value"))
+    return out
+
+
+def map_point_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    points = out.get("point") if isinstance(out.get("point"), list) else []
+    for index, row in enumerate(rows[: len(points)]):
+        if not isinstance(points[index], dict):
+            continue
+        points[index]["name"] = row.get("name") or points[index].get("name")
+        value = points[index].get("value")
+        if isinstance(value, list) and len(value) >= 3:
+            value[2] = row.get("value", value[2])
+    return out
+
+
+def heatmap_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    if not rows:
+        return out
+    x_axis = out.get("xAxis") if isinstance(out.get("xAxis"), list) else []
+    y_axis = out.get("yAxis") if isinstance(out.get("yAxis"), list) else []
+    if not x_axis or not y_axis:
+        return out
+    series = []
+    for index, row in enumerate(rows[: min(len(x_axis) * len(y_axis), 48)]):
+        series.append([index % len(x_axis), index // len(x_axis), row.get("value", 0)])
+    out["seriesData"] = series
+    return out
+
+
+def key_security_dataset_patch(
+    default_dataset: Dict[str, Any],
+    dataset: Dict[str, Any],
+    classifier: Dict[str, Any],
+) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    text_numbers = [parse_bar_number(match.group(0)) for match in NUMBER_RE.finditer(classifier_visible_text(classifier))]
+    numbers = text_numbers[:]
+    if not numbers:
+        numbers = []
+    for key, value in zip(["total", "symmetric", "asymmetric"], numbers[:3]):
+        out[key] = value
+    services = out.get("services") if isinstance(out.get("services"), list) else []
+    for index, row in enumerate(rows[: len(services)]):
+        if isinstance(services[index], dict):
+            services[index]["name"] = row.get("name") or services[index].get("name")
+            if numbers:
+                services[index]["percent"] = row.get("value", services[index].get("percent"))
+    return out
+
+
+def node_object_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    nodes = out.get("nodes") if isinstance(out.get("nodes"), list) else []
+    for index, row in enumerate(rows[: len(nodes)]):
+        if isinstance(nodes[index], dict):
+            nodes[index]["label"] = row.get("name") or nodes[index].get("label")
+            nodes[index]["value"] = row.get("value", nodes[index].get("value"))
+    return out
+
+
+def generic_object_dataset_patch(default_dataset: Dict[str, Any], dataset: Dict[str, Any]) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    out = deepcopy(default_dataset)
+    if not rows:
+        return out
+    for key, value in list(out.items()):
+        if isinstance(value, list):
+            continue
+        if isinstance(value, (int, float)):
+            out[key] = rows[0].get("value", value)
+        elif isinstance(value, str) and not value:
+            out[key] = str(rows[0].get("name") or "")
+    return out
+
+
+def ai_robot_option_patch(dataset: Dict[str, Any], classifier: Dict[str, Any], option_blueprint: Dict[str, Any]) -> Dict[str, Any]:
+    default_dataset = option_blueprint.get("dataset") if isinstance(option_blueprint.get("dataset"), dict) else {}
+    out = deepcopy(default_dataset)
+    text = classifier_visible_text(classifier)
+    values = [parse_bar_number(match.group(0)) for match in NUMBER_RE.finditer(text)]
+    for node_key in ["productNodes", "reportNodes", "platformNodes"]:
+        nodes = out.get(node_key) if isinstance(out.get(node_key), list) else []
+        for index, node in enumerate(nodes):
+            if not isinstance(node, dict):
+                continue
+            if values:
+                node["value"] = values[index % len(values)]
+    return {
+        "dataset": out,
+        "visual": deepcopy(option_blueprint.get("visual") or {}),
+    }
 
 
 def ai_shield_dataset_from_text(text: str) -> Dict[str, Any]:
@@ -856,6 +2210,7 @@ def table_scroll_board_option_patch(dataset: Dict[str, Any]) -> Dict[str, Any]:
         "align": align,
         "columnWidth": [],
         "rowNum": min(max(len(rows), 3), 8),
+        "waitTime": 999999,
         "headerHeight": 35,
         "headerBGC": "#00BAFF",
         "oddRowBGC": "#003B51",

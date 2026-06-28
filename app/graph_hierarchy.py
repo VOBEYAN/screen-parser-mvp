@@ -11,7 +11,7 @@ from .hierarchy import CONTENT_CHILD_TYPES, TYPE_LEVEL, insert_region_nodes, nor
 from .schemas import BBox, Detection, Node, Relation
 
 
-TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
+TYPE_NAMES = ["Screen", "Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter", "Image"]
 TYPE_TO_ID = {name: idx for idx, name in enumerate(TYPE_NAMES)}
 
 
@@ -43,6 +43,9 @@ class GraphHierarchyParser:
 
         for index, node in enumerate(nodes):
             if index == 0:
+                continue
+            if node.type == "Image":
+                node.level = TYPE_LEVEL.get("Image", 4)
                 continue
             type_conf, type_id = torch.max(type_probs[index], dim=-1)
             if float(type_conf) >= 0.45 and int(type_id) < len(self.type_names):

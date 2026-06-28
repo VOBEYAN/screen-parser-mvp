@@ -829,6 +829,36 @@ input[type="range"] {
   color: var(--muted);
 }
 
+.crop-evidence-frame {
+  position: relative;
+  width: min(100%, var(--crop-preview-w, 320px));
+  height: var(--crop-preview-h, 180px);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: #03080e;
+}
+
+.crop-evidence-frame img {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--crop-image-w);
+  height: var(--crop-image-h);
+  max-width: none;
+  transform: translate(var(--crop-offset-x), var(--crop-offset-y));
+}
+
+.crop-evidence-frame::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 2px solid var(--warning);
+  border-radius: 6px;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.18);
+  pointer-events: none;
+}
+
 .analysis-panel {
   overflow: hidden;
 }

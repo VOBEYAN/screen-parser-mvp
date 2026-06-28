@@ -6,7 +6,8 @@ const state = {
   runs: [],
   selectedNodeId: null,
   selectedLevel: "",
-  imageMode: "evidence",
+  imageMode: "source",
+  boxScope: "detector",
   zoom: 1,
   previewUrl: "",
   parseTimer: null,
@@ -73,6 +74,14 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.imageMode = button.dataset.imageMode;
       setActiveButton("[data-image-mode]", button);
+      renderImage();
+    });
+  });
+
+  $$("[data-box-scope]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.boxScope = button.dataset.boxScope;
+      setActiveButton("[data-box-scope]", button);
       renderImage();
     });
   });
@@ -221,7 +230,9 @@ function setResult(result) {
 }
 
 function renderStatus(status) {
-  const llmLabel = status.llmEnabled
+  const llmLabel = status.localQwenEnabled
+    ? `本地 LoRA · ${status.localQwenLoaded ? "已加载" : "待加载"}`
+    : status.llmEnabled
     ? `已启用 · ${status.llmModel || ""}`
     : status.llmConfigured
       ? "已配置但未启用"
@@ -268,7 +279,7 @@ function renderMetrics() {
   $("#metricNodes").textContent = state.selectedLevel ? visibleCount : (summary.nodeCount || 0);
   $("#metricDetections").textContent = summary.detectionCount || 0;
   $("#metricOverlaps").textContent = summary.overlapCount || 0;
-  $("#metricLlmCalls").textContent = summary.llmCallCount || 0;
+  $("#metricLlmCalls").textContent = (summary.localQwenCallCount || 0) + (summary.llmCallCount || 0);
 }
 
 function renderResultViews() {
@@ -301,7 +312,7 @@ function renderImage() {
   const meta = state.result.imageMeta || {};
   const width = Number(meta.width || 1920);
   const height = Number(meta.height || 1080);
-  const nodes = getFilteredNodes();
+  const nodes = getImageOverlayNodes();
 
   stage.className = "image-stage";
   stage.innerHTML = `
@@ -339,6 +350,15 @@ function renderBBox(node) {
     </rect>
     <text class="bbox-label" x="${x + 8}" y="${labelY}">${escapeHtml(node.node_id)}</text>
   `;
+}
+
+function getImageOverlayNodes() {
+  if (state.imageMode === "evidence") return [];
+  const nodes = getFilteredNodes();
+  if (state.boxScope === "detector") {
+    return nodes.filter((node) => Boolean(node.detection_id));
+  }
+  return nodes;
 }
 
 function handleImageHit(event, layer, nodes, width, height) {
@@ -445,7 +465,9 @@ function renderComponentSummary() {
   const components = state.result?.summary?.components || [];
   const summary = state.result?.summary || {};
   const mode = summary.contentClassifierMode || "unknown";
-  const llmBadge = summary.llmEnabled
+  const llmBadge = summary.localQwenEnabled
+    ? `<span class="component-chip"><b>Local LoRA</b><span>Qwen3-VL</span><small>${summary.localQwenCallCount || 0} calls</small></span>`
+    : summary.llmEnabled
     ? `<span class="component-chip"><b>VLM</b><span>${escapeHtml(summary.llmModel || "model")}</span><small>${summary.llmCallCount || 0} calls</small></span>`
     : `<span class="component-chip"><b>VLM</b><span>未调用大模型</span><small>${escapeHtml(mode)}</small></span>`;
   const ocrBadge = summary.paddleOcrEnabled
@@ -494,7 +516,7 @@ function buildSchemaRenderUrl() {
   if (!state.result?.runId) return "";
   const api = encodeURIComponent("http://127.0.0.1:8765");
   const runId = encodeURIComponent(state.result.runId);
-  return `http://localhost:3020/ai-schema/#/schema-render?api=${api}&runId=${runId}&fit=1`;
+  return `http://localhost:3020/ai-schema/#/schema-render?api=${api}&runId=${runId}`;
 }
 
 function renderComponentsTable() {
@@ -689,6 +711,8 @@ function renderInspector() {
 
   const classifier = classifierOf(node);
   const candidates = (node.candidates || []).slice(0, 8);
+  const textEvidence = classifier.textEvidence || classifier.paddleOcrText || classifier.text || "未检测到文字/OCR 未启用";
+  const structureEvidence = classifier.structureEvidence || "已按检测类型和布局约束过滤候选";
   target.className = "node-inspector";
   target.innerHTML = `
     <div class="detail-row"><span>Node</span><b>${escapeHtml(node.node_id)}</b></div>
@@ -700,7 +724,8 @@ function renderInspector() {
     <div class="detail-row"><span>Mode</span><b>${escapeHtml(classifier.mode || "-")}</b></div>
     <div class="detail-row"><span>PaddleOCR</span><b>${escapeHtml(classifier.paddleOcrText || "-")}</b></div>
     <div class="detail-row"><span>模型读字</span><b>${escapeHtml(classifier.text || "-")}</b></div>
-    <div class="detail-row"><span>LLM</span><b>${escapeHtml(classifier.llmComponentId || "-")}</b></div>
+    <div class="detail-row"><span>模型</span><b>${escapeHtml(classifier.llmComponentId || "-")}</b></div>
+    ${renderCropEvidence(node)}
     <form class="correction-form" id="correctionForm">
       <strong>纠正为训练样本</strong>
       <select id="correctComponentSelect" required>
@@ -719,11 +744,11 @@ function renderInspector() {
     </div>
     <div class="reason-box">
       <strong>文字证据</strong>
-      <span>${escapeHtml(classifier.textEvidence || "暂无")}</span>
+      <span>${escapeHtml(textEvidence)}</span>
     </div>
     <div class="reason-box">
       <strong>结构证据</strong>
-      <span>${escapeHtml(classifier.structureEvidence || "暂无")}</span>
+      <span>${escapeHtml(structureEvidence)}</span>
     </div>
     <div class="reason-box">
       <strong>视觉证据</strong>
@@ -736,6 +761,46 @@ function renderInspector() {
   `;
   const correctionForm = $("#correctionForm");
   if (correctionForm) correctionForm.addEventListener("submit", saveCorrectionSample);
+}
+
+function renderCropEvidence(node) {
+  const urls = state.result?.artifactUrls || {};
+  const imageUrl = urls.sourceImage || urls.evidenceImage || "";
+  const meta = state.result?.imageMeta || {};
+  const box = node?.bbox || {};
+  const imageW = Number(meta.width || 0);
+  const imageH = Number(meta.height || 0);
+  const x = Number(box.x || 0);
+  const y = Number(box.y || 0);
+  const w = Math.max(1, Number(box.w || 0));
+  const h = Math.max(1, Number(box.h || 0));
+  if (!imageUrl || !imageW || !imageH || !w || !h) {
+    return `
+      <div class="reason-box">
+        <strong>图片证据</strong>
+        <span>缺少原图或 bbox，无法生成裁剪预览。</span>
+      </div>
+    `;
+  }
+
+  const previewW = 320;
+  const previewH = 180;
+  const padding = 14;
+  const scale = Math.min(3, Math.max(0.12, Math.min((previewW - padding * 2) / w, (previewH - padding * 2) / h)));
+  const cropW = w * scale;
+  const cropH = h * scale;
+  const offsetX = (previewW - cropW) / 2 - x * scale;
+  const offsetY = (previewH - cropH) / 2 - y * scale;
+  return `
+    <div class="reason-box crop-evidence">
+      <strong>图片证据</strong>
+      <div class="crop-evidence-frame"
+        style="--crop-preview-w:${previewW}px;--crop-preview-h:${previewH}px;--crop-image-w:${imageW * scale}px;--crop-image-h:${imageH * scale}px;--crop-offset-x:${offsetX}px;--crop-offset-y:${offsetY}px;">
+        <img src="${escapeAttr(imageUrl)}" alt="节点裁剪图" />
+      </div>
+      <span>${escapeHtml(formatBBox(box))}</span>
+    </div>
+  `;
 }
 
 async function saveCorrectionSample(event) {

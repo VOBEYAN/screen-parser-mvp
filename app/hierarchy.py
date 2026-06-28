@@ -20,18 +20,19 @@ TYPE_LEVEL = {
     "Table": 4,
     "Map": 4,
     "MetricCard": 4,
+    "Image": 4,
 }
 
 COMPATIBILITY = {
-    "Screen": {"Region", "Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Region": {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Panel": {"Border", "Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Border": {"Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
-    "Content": {"Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"},
+    "Screen": {"Region", "Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"},
+    "Region": {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"},
+    "Panel": {"Border", "Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"},
+    "Border": {"Title", "Content", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"},
+    "Content": {"Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"},
 }
 
-CONTENT_CHILD_TYPES = {"Chart", "Table", "Map", "MetricCard", "Filter"}
-REGION_CHILD_TYPES = {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard"}
+CONTENT_CHILD_TYPES = {"Chart", "Table", "Map", "MetricCard", "Filter", "Image"}
+REGION_CHILD_TYPES = {"Panel", "Border", "Title", "Decorate", "Filter", "Chart", "Table", "Map", "MetricCard", "Image"}
 
 
 class HierarchyParser:
@@ -185,6 +186,8 @@ def normalize_node_type(class_name: str) -> str:
         return "Table"
     if "map" in lower:
         return "Map"
+    if any(token in lower for token in ["image", "img", "photo", "picture", "shield", "robot", "earth", "3d", "visual"]):
+        return "Image"
     if "title" in lower or "text" in lower:
         return "Title"
     if "border" in lower:

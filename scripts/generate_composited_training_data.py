@@ -20,12 +20,15 @@ from app.component_library import ComponentLibrary
 from app.schemas import BBox, ComponentRecord
 
 
-DETECTION_CLASSES = ["Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"]
-STRUCTURE_NODE_TYPES = ["Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter"]
+DETECTION_CLASSES = ["Panel", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter", "Image"]
+STRUCTURE_NODE_TYPES = ["Region", "Panel", "Title", "Border", "Content", "Chart", "Table", "Map", "MetricCard", "Decorate", "Filter", "Image"]
 CHART_CATEGORIES = {"Bars", "Lines", "Pies", "Scatters", "Areas", "Funnels", "WordClouds", "FlowChart"}
 TITLE_CATEGORIES = {"Title", "Texts"}
 TABLE_CATEGORIES = {"Tables"}
-MAP_CATEGORIES = {"Maps", "Biz", "Three"}
+MAP_CATEGORIES = {"Maps"}
+MAP_COMPONENT_IDS = {"ChinaMap", "MapAmap", "MapBase"}
+IMAGE_COMPONENT_IDS = {"AIRobot", "AIShield", "KeySecurity3D", "ThreeEarth01"}
+IMAGE_CATEGORIES = {"Three"}
 FILTER_CATEGORIES = {"Inputs"}
 DECORATE_CATEGORIES = {"Decorates"}
 SCREEN_TITLE_TEXTS = [
@@ -246,6 +249,7 @@ def generate_split(
     border_assets = [asset for asset in assets if asset.coarse_type == "Border"]
     decorate_assets = [asset for asset in assets if asset.coarse_type == "Decorate"]
     chart_assets = [asset for asset in assets if asset.coarse_type == "Chart"]
+    image_assets = [asset for asset in assets if asset.coarse_type == "Image"]
 
     for screen_index in range(screen_count):
         selected = stream[cursor : cursor + components_per_screen]
@@ -258,6 +262,7 @@ def generate_split(
             border_assets=border_assets,
             decorate_assets=decorate_assets,
             chart_assets=chart_assets,
+            image_assets=image_assets,
             width=width,
             height=height,
             label_mode=label_mode,
@@ -359,6 +364,7 @@ def generate_one(
     border_assets: List[ComponentAsset],
     decorate_assets: List[ComponentAsset],
     chart_assets: List[ComponentAsset],
+    image_assets: List[ComponentAsset],
     width: int,
     height: int,
     label_mode: str,
@@ -411,7 +417,10 @@ def generate_one(
         role="screenTitle",
     )
 
+    selected = list(selected)
     slots = layout_slots(len(selected), width, height, rng, mode=layout_mode)
+    if image_assets and slots and layout_mode in {"mixed", "dense"} and rng.random() < 0.72:
+        selected[central_visual_slot_index(slots, width, height)] = rng.choice(image_assets)
     slot_regions = build_slot_regions(slots, width, height)
     for region in slot_regions:
         add_synthetic_node(
@@ -493,7 +502,7 @@ def generate_one(
             class_to_id,
             emit_label=False,
         )
-        pasted_content = paste_asset(image, asset, content, rng, stretch=asset.coarse_type in {"Chart", "Table", "Map", "Border"})
+        pasted_content = paste_asset(image, asset, content, rng, stretch=asset.coarse_type in {"Chart", "Table", "Map", "Border", "Image"})
         add_node(nodes, labels, f"{content_id}_component", content_id, asset, pasted_content, width, height, label_mode, class_to_id)
         hard_chart_style = asset.coarse_type == "Chart" and should_draw_luminous_bar_chart(slot, width, hard_chart_rate, rng)
         if content_hints:
@@ -510,7 +519,7 @@ def generate_one(
                 overlay_asset,
                 overlay_target,
                 rng,
-                stretch=overlay_asset.coarse_type in {"Chart", "Table", "Map"},
+                stretch=overlay_asset.coarse_type in {"Chart", "Table", "Map", "Image"},
             )
             if content_hints:
                 draw_content_hint(draw, overlay_bbox, overlay_asset, rng, compact=True)
@@ -548,6 +557,25 @@ def generate_one(
                     label_mode,
                     class_to_id,
                 )
+
+    if image_assets and layout_mode == "mixed" and rng.random() < 0.46:
+        asset = rng.choice(image_assets)
+        target = center_main_visual_box(width, height, rng)
+        pasted_image = paste_asset(image, asset, target, rng, stretch=True)
+        if content_hints:
+            draw_image_hint(draw, pasted_image, asset, rng)
+        add_node(
+            nodes,
+            labels,
+            "node_main_image_0000",
+            region_for_slot(target, slot_regions),
+            asset,
+            pasted_image,
+            width,
+            height,
+            label_mode,
+            class_to_id,
+        )
 
     meta = {"width": width, "height": height, "inputType": "design", "nodes": nodes}
     return image.convert("RGB"), labels, meta
@@ -737,6 +765,30 @@ def mixed_dashboard_slots(count: int, width: int, height: int, rng: random.Rando
         )
     rng.shuffle(slots)
     return slots[:count]
+
+
+def central_visual_slot_index(slots: List[BBox], width: int, height: int) -> int:
+    target_x = width * 0.5
+    target_y = height * 0.54
+    best_index = 0
+    best_score = -1.0
+    for index, slot in enumerate(slots):
+        cx, cy = slot.center
+        distance = abs(cx - target_x) / max(width, 1) + abs(cy - target_y) / max(height, 1)
+        area_score = slot.area / max(float(width * height), 1.0)
+        score = area_score * 1.8 - distance
+        if score > best_score:
+            best_index = index
+            best_score = score
+    return best_index
+
+
+def center_main_visual_box(width: int, height: int, rng: random.Random) -> BBox:
+    box_w = width * rng.uniform(0.30, 0.48)
+    box_h = height * rng.uniform(0.34, 0.58)
+    x = (width - box_w) / 2.0 + rng.uniform(-width * 0.035, width * 0.035)
+    y = height * rng.uniform(0.20, 0.28)
+    return BBox(x, y, box_w, box_h)
 
 
 def panel_title_box(slot: BBox, rng: random.Random, mode: str = "center") -> BBox:
@@ -1005,6 +1057,10 @@ def draw_content_hint(draw: ImageDraw.ImageDraw, bbox: BBox, asset: ComponentAss
         draw_map_hint(draw, bbox, rng, compact)
         return
 
+    if node_type == "Image":
+        draw_image_hint(draw, bbox, asset, rng, compact)
+        return
+
     if node_type == "Filter":
         draw_filter_hint(draw, bbox, asset, rng)
         return
@@ -1075,6 +1131,36 @@ def draw_filter_hint(draw: ImageDraw.ImageDraw, bbox: BBox, asset: ComponentAsse
     draw.text((bbox.x + 10, bbox.y + max(7, bbox.h * 0.32)), asset.record.title[:8] or "筛选", font=font, fill=(224, 244, 255, 220))
     draw.line([bbox.right - 22, bbox.y + bbox.h * 0.45, bbox.right - 14, bbox.y + bbox.h * 0.58], fill=(255, 218, 92, 220), width=2)
     draw.line([bbox.right - 14, bbox.y + bbox.h * 0.58, bbox.right - 6, bbox.y + bbox.h * 0.45], fill=(255, 218, 92, 220), width=2)
+
+
+def draw_image_hint(draw: ImageDraw.ImageDraw, bbox: BBox, asset: ComponentAsset, rng: random.Random, compact: bool = False) -> None:
+    if bbox.w < 36 or bbox.h < 36:
+        return
+    accent = rng.choice([(92, 225, 230, 75), (125, 211, 252, 70), (252, 211, 77, 58)])
+    outline = (accent[0], accent[1], accent[2], min(165, accent[3] + 70))
+    inset = max(3.0, min(bbox.w, bbox.h) * 0.025)
+    draw.rounded_rectangle(
+        [bbox.x + inset, bbox.y + inset, bbox.right - inset, bbox.bottom - inset],
+        radius=max(3.0, min(16.0, min(bbox.w, bbox.h) * 0.045)),
+        outline=outline,
+        width=2,
+    )
+    if compact:
+        return
+    cx, cy = bbox.center
+    radius = min(bbox.w, bbox.h) * rng.uniform(0.16, 0.28)
+    draw.ellipse([cx - radius, cy - radius * 0.72, cx + radius, cy + radius * 0.72], outline=accent, width=2)
+    key = asset.record.key.lower()
+    if "shield" in key:
+        points = [
+            (cx, cy - radius * 0.95),
+            (cx + radius * 0.58, cy - radius * 0.36),
+            (cx + radius * 0.44, cy + radius * 0.60),
+            (cx, cy + radius),
+            (cx - radius * 0.44, cy + radius * 0.60),
+            (cx - radius * 0.58, cy - radius * 0.36),
+        ]
+        draw.polygon(points, outline=outline)
 
 
 def draw_bar_hint(draw: ImageDraw.ImageDraw, bbox: BBox, rng: random.Random) -> None:
@@ -1276,6 +1362,7 @@ def draw_preview(image: Image.Image, meta: Dict[str, object], output_path: Path)
         "Border": (96, 165, 250, 230),
         "Decorate": (203, 213, 225, 230),
         "Filter": (45, 212, 191, 230),
+        "Image": (14, 165, 233, 230),
     }
     for node in meta.get("nodes", []):
         bbox = node["bbox"]
@@ -1397,6 +1484,10 @@ def write_yolo_config(out: Path, classes: List[str]) -> None:
 def coarse_type(record: ComponentRecord) -> str:
     key = record.key.lower()
     category = record.category
+    if record.key in MAP_COMPONENT_IDS:
+        return "Map"
+    if record.key in IMAGE_COMPONENT_IDS or category in IMAGE_CATEGORIES:
+        return "Image"
     if category == "Borders":
         return "Border"
     if category in TITLE_CATEGORIES:
@@ -1405,6 +1496,8 @@ def coarse_type(record: ComponentRecord) -> str:
         return "Table"
     if category in MAP_CATEGORIES:
         return "Map"
+    if category == "Biz":
+        return "Image"
     if category in FILTER_CATEGORIES:
         return "Filter"
     if category in DECORATE_CATEGORIES or "pipeline" in key or "decorate" in key or "fullscreen" in key:
@@ -1431,6 +1524,7 @@ def level_for_type(node_type: str) -> int:
         "Table": 4,
         "Map": 4,
         "MetricCard": 4,
+        "Image": 4,
     }.get(node_type, 4)
 
 

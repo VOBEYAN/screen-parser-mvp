@@ -13,7 +13,7 @@ https://github.com/VOBEYAN/ai-schema-view
 - 上传大屏设计图，输出检测框、层级树、组件候选、识别报告和结构化 JSON。
 - 支持 YOLO 结构检测模型；未放置权重时会走本地 OpenCV fallback，方便先跑通流程。
 - 支持 PaddleOCR 文字识别。
-- 支持 OpenAI-compatible 视觉大模型接口，例如 DashScope Qwen VL。
+- 支持本地 Qwen3-VL LoRA 组件识别模型，也支持 OpenAI-compatible 视觉大模型接口，例如 DashScope Qwen VL。
 - 内置 `data/component-reference` 组件参考库，用于把识别结果匹配到 `ai-schema-view` 的组件 ID。
 - 输出 `aiSchemaComponents`，可直接被 `ai-schema-view` 的 `/schema-render` 页面读取并运行时渲染。
 - 提供纠错样本保存和 Qwen VL 微调数据导出接口，自动生成 `data.jsonl` 和训练 zip 包。
@@ -48,6 +48,40 @@ chmod +x start_studio.command
 ```
 
 ## 视觉大模型配置
+
+## 使用本地 Qwen3-VL LoRA
+
+本仓库现在可以直接加载本地微调后的 Qwen3-VL LoRA，用于把检测出来的组件 crop 识别成 `ai-schema-view` 的 `componentId`。
+
+默认路径：
+
+```text
+models/qwen3-vl-2b-instruct-mlx-bf16-hfkeyed
+output/qwen3-vl-mps-peft-component-lora-2000steps
+```
+
+GitHub 上的基础模型使用 Git LFS 分片保存。克隆仓库后先拉取 LFS 文件并还原权重：
+
+```bash
+git lfs pull
+bash scripts/reconstruct_qwen3_vl_model.sh
+```
+
+启动：
+
+```bash
+PYTORCH_ENABLE_MPS_FALLBACK=1 python -m app.server \
+  --port 8765 \
+  --reference-library data/component-reference \
+  --multimodal-classifier \
+  --local-qwen \
+  --local-qwen-model models/qwen3-vl-2b-instruct-mlx-bf16-hfkeyed \
+  --local-qwen-adapter output/qwen3-vl-mps-peft-component-lora-2000steps
+```
+
+`start_studio.command` 已默认优先使用 `mlx-vlm-qwen` conda 环境和这个本地 LoRA。模型会懒加载：第一次解析图片时才加载到 MPS/GPU/CPU。
+
+## 远程视觉大模型配置
 
 不要把真实 API Key 写进代码或提交到 Git。启动前用环境变量配置：
 
@@ -159,7 +193,7 @@ zip 根目录里包含 `data.jsonl` 和对应图片文件。`data/finetune/` 是
 
 ## 训练数据与模型
 
-合成训练数据、运行报告、模型权重都不提交：
+合成训练数据、运行报告、adapter 输出和临时模型默认不提交。当前本地 Qwen3-VL 基础模型以 `model.safetensors.part-*` 的 Git LFS 分片提交，克隆后用 `scripts/reconstruct_qwen3_vl_model.sh` 还原。
 
 ```text
 data/finetune/
@@ -168,6 +202,7 @@ artifacts/
 logs/
 runs/
 models/*.pt
+output/
 ```
 
 需要重新生成训练数据时，可使用：

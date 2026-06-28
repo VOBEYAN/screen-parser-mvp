@@ -12,6 +12,10 @@ from .schemas import BBox, Detection
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_YOLO_MODELS = (
+    PROJECT_ROOT / "models" / "yolo_screen_structure_rich_v5_design1_hardcase_local.pt",
+    PROJECT_ROOT / "models" / "yolo_screen_structure_rich_v5_hardcase_local.pt",
+    PROJECT_ROOT / "models" / "yolo_screen_structure_rich_v5.pt",
+    PROJECT_ROOT / "models" / "yolo_screen_structure_rich_v5_quick_local.pt",
     PROJECT_ROOT / "models" / "yolo_screen_structure_chart_hard_v3.pt",
     PROJECT_ROOT / "models" / "yolo_screen_structure_title_hard_v2.pt",
     PROJECT_ROOT / "models" / "yolo_screen_structure_local_v1.pt",
@@ -360,10 +364,15 @@ def infer_component_type(bbox: BBox, image_width: int, image_height: int, featur
 
 def normalize_detection_type(class_name: str) -> str:
     value = str(class_name).lower()
+    valid_types = {"Region", "Panel", "Content", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter", "Image"}
+    if class_name in valid_types:
+        return class_name
     if "table" in value:
         return "Table"
     if "map" in value:
         return "Map"
+    if any(token in value for token in ["image", "img", "photo", "picture", "shield", "robot", "earth", "3d", "visual"]):
+        return "Image"
     if "title" in value or "text" in value:
         return "Title"
     if "border" in value:
@@ -393,4 +402,4 @@ def normalize_detection_type(class_name: str) -> str:
         return "Chart"
     if "clock" in value or "decorate" in value or "circle" in value or "pipeline" in value:
         return "Decorate"
-    return class_name if class_name in {"Region", "Panel", "Content", "Title", "Chart", "Table", "Map", "MetricCard", "Border", "Decorate", "Filter"} else "Decorate"
+    return class_name if class_name in valid_types else "Decorate"

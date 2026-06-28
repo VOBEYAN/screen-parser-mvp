@@ -30,6 +30,10 @@ class ScreenParser:
         multimodal_model: Optional[str] = None,
         multimodal_base_url: Optional[str] = None,
         multimodal_api_key: Optional[str] = None,
+        local_qwen_model: Optional[str] = None,
+        local_qwen_adapter: Optional[str] = None,
+        local_qwen_device: Optional[str] = None,
+        local_qwen_enabled: Optional[bool] = None,
     ):
         self.catalog_path = catalog_path
         self.artifact_root = artifact_root
@@ -53,6 +57,10 @@ class ScreenParser:
             base_url=multimodal_base_url,
             api_key=multimodal_api_key,
             visual_library=self.visual_library,
+            local_qwen_model_path=local_qwen_model,
+            local_qwen_adapter_path=local_qwen_adapter,
+            local_qwen_device=local_qwen_device,
+            local_qwen_enabled=local_qwen_enabled,
         )
         self.reporter = ReportWriter(artifact_root)
 

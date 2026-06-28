@@ -106,15 +106,19 @@
         <article><span>组件节点</span><strong id="metricNodes">0</strong></article>
         <article><span>检测框</span><strong id="metricDetections">0</strong></article>
         <article><span>异常重叠</span><strong id="metricOverlaps">0</strong></article>
-        <article><span>大模型调用</span><strong id="metricLlmCalls">0</strong></article>
+        <article><span>模型调用</span><strong id="metricLlmCalls">0</strong></article>
       </section>
 
       <section class="workspace-grid">
         <div class="visual-panel">
           <div class="panel-toolbar">
             <div class="segmented" role="tablist" aria-label="图像视图">
-              <button type="button" class="active" data-image-mode="evidence">证据图</button>
-              <button type="button" data-image-mode="source">原图</button>
+              <button type="button" class="active" data-image-mode="source">原图</button>
+              <button type="button" data-image-mode="evidence">证据图</button>
+            </div>
+            <div class="segmented" role="tablist" aria-label="检测框范围">
+              <button type="button" class="active" data-box-scope="detector">YOLO框</button>
+              <button type="button" data-box-scope="all">全部层级</button>
             </div>
             <div class="zoom-tools">
               <button type="button" data-zoom="out">-</button>

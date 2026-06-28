@@ -27,6 +27,11 @@ def main() -> None:
     parser.add_argument("--multimodal-model", default=None)
     parser.add_argument("--multimodal-base-url", default=None)
     parser.add_argument("--multimodal-api-key", default=None)
+    parser.add_argument("--local-qwen-model", default=None)
+    parser.add_argument("--local-qwen-adapter", default=None)
+    parser.add_argument("--local-qwen-device", default=None)
+    parser.add_argument("--local-qwen", dest="local_qwen_enabled", action="store_true", default=None)
+    parser.add_argument("--no-local-qwen", dest="local_qwen_enabled", action="store_false")
     parser.add_argument("--force-llm", action="store_true")
     args = parser.parse_args()
 
@@ -41,6 +46,10 @@ def main() -> None:
         multimodal_model=args.multimodal_model,
         multimodal_base_url=args.multimodal_base_url,
         multimodal_api_key=args.multimodal_api_key,
+        local_qwen_model=args.local_qwen_model,
+        local_qwen_adapter=args.local_qwen_adapter,
+        local_qwen_device=args.local_qwen_device,
+        local_qwen_enabled=args.local_qwen_enabled,
     )
     artifacts = screen_parser.parse(args.image, input_type=args.input_type, top_k=args.top_k, force_llm=args.force_llm)
     print(json.dumps(artifacts, ensure_ascii=False, indent=2))

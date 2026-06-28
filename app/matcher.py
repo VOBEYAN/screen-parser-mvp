@@ -15,6 +15,7 @@ TYPE_TO_CATEGORIES = {
     "Border": ["Borders"],
     "Title": ["Title", "Texts"],
     "MetricCard": ["Mores", "Biz", "Texts"],
+    "Image": ["Biz", "Three", "Decorates"],
     "Filter": ["Inputs"],
     "Decorate": ["Decorates", "Mores"],
 }
