@@ -491,7 +491,7 @@ function renderSchemaCanvas() {
   const components = state.result?.aiSchemaComponents || [];
   const openBtn = $("#openSchemaRenderBtn");
   const renderUrl = buildSchemaRenderUrl();
-  if (openBtn) openBtn.href = renderUrl || "http://localhost:3020/ai-schema/#/schema-render";
+  if (openBtn) openBtn.href = renderUrl || defaultSchemaRenderBaseUrl();
   if (!components.length) {
     target.className = "schema-canvas empty";
     target.innerHTML = `
@@ -514,9 +514,15 @@ function renderSchemaCanvas() {
 
 function buildSchemaRenderUrl() {
   if (!state.result?.runId) return "";
-  const api = encodeURIComponent("http://127.0.0.1:8765");
+  const api = encodeURIComponent(window.location.origin);
   const runId = encodeURIComponent(state.result.runId);
-  return `http://localhost:3020/ai-schema/#/schema-render?api=${api}&runId=${runId}`;
+  return `${defaultSchemaRenderBaseUrl()}?api=${api}&runId=${runId}&fit=1`;
+}
+
+function defaultSchemaRenderBaseUrl() {
+  return window.SCHEMA_RENDER_BASE_URL
+    || window.localStorage.getItem("schemaRenderBaseUrl")
+    || "http://localhost:5173/ai-schema/#/schema-render";
 }
 
 function renderComponentsTable() {
