@@ -41,6 +41,14 @@ def build_ai_schema_components(
         z_index = z_index_for_node(node.type)
         option_blueprint = library.option_blueprint(record.key)
         schema_shape = library.option_shape(record.key)
+        facts = build_recognition_facts(
+            component_id=record.key,
+            category=record.category,
+            dataset=dataset,
+            classifier=classifier,
+            bbox=component_bbox,
+            schema_shape=schema_shape,
+        )
         option_patch = build_option_patch(
             record.category,
             record.key,
@@ -50,6 +58,7 @@ def build_ai_schema_components(
             schema_shape=schema_shape,
             bbox=component_bbox,
         )
+        hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
         component = {
             "id": f"schema_{node.node_id}",
             "nodeId": node.node_id,
@@ -78,7 +87,10 @@ def build_ai_schema_components(
                 "chartFrame": record.chart_frame,
                 "package": infer_package(record.key, record.category),
             },
+            "option": hydrated_option,
             "optionPatch": option_patch,
+            "recognitionFacts": facts,
+            "optionHydrationVersion": "schema-aware-v1",
             "dataSource": {
                 "source": "ocr+vlm",
                 "ocrText": str(classifier.get("paddleOcrText") or ""),
@@ -154,15 +166,20 @@ def build_global_virtual_components(
         "paddleOcrText": text,
         "visualEvidence": "center shield with AI text, circular base, multiple risk-warning metric nodes",
     }
+    option_blueprint = library.option_blueprint(record.key)
+    schema_shape = library.option_shape(record.key)
+    source_dataset = ai_shield_dataset_from_text(text)
     option_patch = build_option_patch(
         record.category,
         record.key,
-        ai_shield_dataset_from_text(text),
+        source_dataset,
         classifier,
-        option_blueprint=library.option_blueprint(record.key),
-        schema_shape=library.option_shape(record.key),
+        option_blueprint=option_blueprint,
+        schema_shape=schema_shape,
         bbox=bbox,
     )
+    facts = build_recognition_facts(record.key, record.category, source_dataset, classifier, bbox, schema_shape)
+    hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
     return [
         {
             "id": "schema_virtual_ai_shield",
@@ -172,7 +189,7 @@ def build_global_virtual_components(
             "title": record.title,
             "category": record.category,
             "categoryName": record.category_name,
-            "schemaShape": library.option_shape(record.key),
+            "schemaShape": schema_shape,
             "bbox": bbox,
             "attr": {
                 "x": round(float(bbox["x"]), 2),
@@ -193,7 +210,10 @@ def build_global_virtual_components(
                 "chartFrame": record.chart_frame,
                 "package": infer_package(record.key, record.category),
             },
+            "option": hydrated_option,
             "optionPatch": option_patch,
+            "recognitionFacts": facts,
+            "optionHydrationVersion": "schema-aware-v1",
             "dataSource": {
                 "source": "ocr+layout+global-repair",
                 "ocrText": text[:500],
@@ -227,15 +247,18 @@ def build_schema_semantic_aggregate_components(nodes: List[Node], library: Compo
             "paddleOcrText": text,
             "visualEvidence": f"schema terms matched: {', '.join(sorted(matched_terms))}",
         }
+        source_dataset = {"dimensions": ["name", "value"], "source": []}
         option_patch = build_option_patch(
             record.category,
             record.key,
-            {"dimensions": ["name", "value"], "source": []},
+            source_dataset,
             classifier,
             option_blueprint=option_blueprint,
             schema_shape=schema_shape,
             bbox=bbox,
         )
+        facts = build_recognition_facts(record.key, record.category, source_dataset, classifier, bbox, schema_shape)
+        hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
         components.append(
             {
                 "id": f"schema_virtual_{record.key}_semantic",
@@ -268,7 +291,10 @@ def build_schema_semantic_aggregate_components(nodes: List[Node], library: Compo
                     "chartFrame": record.chart_frame,
                     "package": infer_package(record.key, record.category),
                 },
+                "option": hydrated_option,
                 "optionPatch": option_patch,
+                "recognitionFacts": facts,
+                "optionHydrationVersion": "schema-aware-v1",
                 "dataSource": {
                     "source": "ocr+schema-semantic-aggregate",
                     "ocrText": text[:500],
@@ -554,15 +580,20 @@ def build_virtual_panel_title_components(
             continue
         text = " ".join(str(item.get("text") or "").strip() for item in title_items if str(item.get("text") or "").strip())
         classifier = {"text": text, "paddleOcrText": text, "paddleOcrItems": title_items, "contentType": "title"}
+        option_blueprint = library.option_blueprint(record.key)
+        schema_shape = library.option_shape(record.key)
+        dataset = {"dimensions": ["name", "value"], "source": [{"name": text, "value": 0}]}
         option_patch = build_option_patch(
             record.category,
             record.key,
-            {"dimensions": ["name", "value"], "source": [{"name": text, "value": 0}]},
+            dataset,
             classifier,
-            option_blueprint=library.option_blueprint(record.key),
-            schema_shape=library.option_shape(record.key),
+            option_blueprint=option_blueprint,
+            schema_shape=schema_shape,
             bbox=bbox,
         )
+        facts = build_recognition_facts(record.key, record.category, dataset, classifier, bbox, schema_shape)
+        hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
         components.append(
             {
                 "id": f"schema_{node.node_id}_title",
@@ -573,7 +604,7 @@ def build_virtual_panel_title_components(
                 "title": record.title,
                 "category": record.category,
                 "categoryName": record.category_name,
-                "schemaShape": library.option_shape(record.key),
+                "schemaShape": schema_shape,
                 "bbox": bbox,
                 "attr": {
                     "x": round(float(bbox["x"]), 2),
@@ -594,7 +625,10 @@ def build_virtual_panel_title_components(
                     "chartFrame": record.chart_frame,
                     "package": infer_package(record.key, record.category),
                 },
+                "option": hydrated_option,
                 "optionPatch": option_patch,
+                "recognitionFacts": facts,
+                "optionHydrationVersion": "schema-aware-v1",
                 "dataSource": {
                     "source": "ocr+layout+panel-title",
                     "ocrText": text,
@@ -696,6 +730,8 @@ def build_repeated_metric_components(
             schema_shape=schema_shape,
             bbox=bbox,
         )
+        facts = build_recognition_facts(record.key, record.category, dataset, cluster_classifier, bbox, schema_shape)
+        hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
         components.append(
             {
                 "id": f"schema_{node.node_id}_metric_{index + 1}",
@@ -727,7 +763,10 @@ def build_repeated_metric_components(
                     "chartFrame": record.chart_frame,
                     "package": infer_package(record.key, record.category),
                 },
+                "option": hydrated_option,
                 "optionPatch": option_patch,
+                "recognitionFacts": facts,
+                "optionHydrationVersion": "schema-aware-v1",
                 "dataSource": {
                     "source": "ocr+layout+metric-split",
                     "ocrText": cluster_text,
@@ -807,15 +846,19 @@ def build_virtual_inner_component(node: Node, nodes: List[Node], library: Compon
 
     bbox = virtual_content_bbox(node, record.category, classifier)
     dataset = infer_dataset(node, classifier, record.category)
+    option_blueprint = library.option_blueprint(record.key)
+    schema_shape = library.option_shape(record.key)
     option_patch = build_option_patch(
         record.category,
         record.key,
         dataset,
         classifier,
-        option_blueprint=library.option_blueprint(record.key),
-        schema_shape=library.option_shape(record.key),
+        option_blueprint=option_blueprint,
+        schema_shape=schema_shape,
         bbox=bbox,
     )
+    facts = build_recognition_facts(record.key, record.category, dataset, classifier, bbox, schema_shape)
+    hydrated_option = hydrate_option_from_facts(option_blueprint, option_patch, facts, schema_shape)
     return {
         "id": f"schema_{node.node_id}_inner",
         "nodeId": f"{node.node_id}_inner",
@@ -825,7 +868,7 @@ def build_virtual_inner_component(node: Node, nodes: List[Node], library: Compon
         "title": record.title,
         "category": record.category,
         "categoryName": record.category_name,
-        "schemaShape": library.option_shape(record.key),
+        "schemaShape": schema_shape,
         "bbox": bbox,
         "attr": {
             "x": round(float(bbox["x"]), 2),
@@ -846,7 +889,10 @@ def build_virtual_inner_component(node: Node, nodes: List[Node], library: Compon
             "chartFrame": record.chart_frame,
             "package": infer_package(record.key, record.category),
         },
+        "option": hydrated_option,
         "optionPatch": option_patch,
+        "recognitionFacts": facts,
+        "optionHydrationVersion": "schema-aware-v1",
         "dataSource": {
             "source": "ocr+vlm+container-repair",
             "ocrText": str(classifier.get("paddleOcrText") or ""),
@@ -1593,6 +1639,167 @@ def token_items(text: str) -> List[Dict[str, Any]]:
 def looks_like_unit_or_title(token: str) -> bool:
     text = str(token or "").strip()
     return text in {"万人", "人", "条", "个", "次", "AI", "平台分布", "服务分布", "学历分布", "调用分布指数", "实时调用"} or text.endswith("分布")
+
+
+def build_recognition_facts(
+    component_id: str,
+    category: str,
+    dataset: Dict[str, Any],
+    classifier: Dict[str, Any],
+    bbox: Dict[str, Any],
+    schema_shape: Dict[str, Any],
+) -> Dict[str, Any]:
+    rows = normalized_rows(dataset_rows(dataset))
+    text = classifier_text(classifier)
+    title = first_title_text(classifier)
+    values = [float(row.get("value") or 0) for row in rows]
+    labels = [str(row.get("name") or f"指标{index + 1}") for index, row in enumerate(rows)]
+    return {
+        "componentId": component_id,
+        "category": category,
+        "datasetKind": str(schema_shape.get("datasetKind") or ""),
+        "bbox": {
+            "x": round(float(bbox.get("x") or 0), 2),
+            "y": round(float(bbox.get("y") or 0), 2),
+            "w": round(float(bbox.get("w") or 0), 2),
+            "h": round(float(bbox.get("h") or 0), 2),
+        },
+        "text": text[:500],
+        "title": title,
+        "labels": labels[:24],
+        "values": values[:24],
+        "unit": infer_unit(text),
+        "colors": extract_colors(classifier),
+        "series": dataset_rows(dataset)[:24],
+        "optionKeys": schema_shape.get("optionKeys") or [],
+        "semanticPaths": schema_shape.get("semanticPaths") or {},
+    }
+
+
+def hydrate_option_from_facts(
+    option_blueprint: Dict[str, Any],
+    option_patch: Dict[str, Any],
+    facts: Dict[str, Any],
+    schema_shape: Dict[str, Any],
+) -> Dict[str, Any]:
+    option = deepcopy(option_blueprint or {})
+    option = merge_option_patch(option, option_patch or {})
+    apply_semantic_facts_to_option(option, facts, schema_shape or {})
+    return option
+
+
+def merge_option_patch(base: Any, patch: Any) -> Any:
+    if not isinstance(base, dict):
+        return deepcopy(patch)
+    if not isinstance(patch, dict):
+        return deepcopy(patch) if patch not in (None, "") else deepcopy(base)
+    out = deepcopy(base)
+    for key, value in patch.items():
+        if key == "dataset":
+            out[key] = deepcopy(value)
+        elif isinstance(value, dict) and isinstance(out.get(key), dict):
+            out[key] = merge_option_patch(out[key], value)
+        else:
+            out[key] = deepcopy(value)
+    return out
+
+
+def apply_semantic_facts_to_option(option: Dict[str, Any], facts: Dict[str, Any], schema_shape: Dict[str, Any]) -> None:
+    semantic_paths = schema_shape.get("semanticPaths") if isinstance(schema_shape.get("semanticPaths"), dict) else {}
+    title = str(facts.get("title") or "").strip()
+    unit = str(facts.get("unit") or "").strip()
+    colors = [str(item) for item in facts.get("colors") or [] if is_hex_color(str(item))]
+    bbox = facts.get("bbox") if isinstance(facts.get("bbox"), dict) else {}
+
+    if title:
+        for path in semantic_paths.get("title") or []:
+            set_option_path_if_compatible(option, path, title, overwrite_empty=True)
+    if unit:
+        for path in semantic_paths.get("unit") or []:
+            set_option_path_if_compatible(option, path, unit, overwrite_empty=True)
+    if colors:
+        for index, path in enumerate(semantic_paths.get("color") or []):
+            set_option_path_if_compatible(option, path, colors[index % len(colors)], overwrite_empty=False)
+
+    text = option.get("dataset") if isinstance(option.get("dataset"), str) else title
+    if text:
+        for path in semantic_paths.get("fontSize") or []:
+            current = get_option_path(option, path)
+            size = adaptive_text_size(str(text), numeric_value(bbox.get("w"), None), numeric_value(bbox.get("h"), 0.0) or 0.0, numeric_value(current, 20.0) or 20.0, height_ratio=0.56)
+            set_option_path_if_compatible(option, path, size, overwrite_empty=False)
+
+
+def set_option_path_if_compatible(option: Dict[str, Any], path: str, value: Any, overwrite_empty: bool) -> bool:
+    if "[]" in path or path.startswith("dataset."):
+        return False
+    parts = [part for part in path.split(".") if part]
+    if not parts:
+        return False
+    target: Any = option
+    for part in parts[:-1]:
+        if not isinstance(target, dict) or part not in target:
+            return False
+        target = target.get(part)
+    if not isinstance(target, dict) or parts[-1] not in target:
+        return False
+    current = target.get(parts[-1])
+    if isinstance(value, str):
+        if isinstance(current, str) and (overwrite_empty or not current):
+            target[parts[-1]] = value
+            return True
+        if isinstance(current, list) and all(isinstance(item, str) for item in current):
+            target[parts[-1]] = [value, *current[1:]] if current else [value]
+            return True
+    if isinstance(value, (int, float)) and isinstance(current, (int, float)):
+        target[parts[-1]] = value
+        return True
+    return False
+
+
+def get_option_path(option: Dict[str, Any], path: str) -> Any:
+    if "[]" in path:
+        return None
+    target: Any = option
+    for part in path.split("."):
+        if not isinstance(target, dict):
+            return None
+        target = target.get(part)
+    return target
+
+
+def infer_unit(text: str) -> str:
+    matches = re.findall(r"\d+(?:\.\d+)?\s*([\u4e00-\u9fffA-Za-z%]{1,6})", text or "")
+    for unit in matches:
+        unit = str(unit).strip()
+        if unit and not NUMBER_RE.fullmatch(unit) and unit not in {"AI"}:
+            return unit
+    return ""
+
+
+def extract_colors(classifier: Dict[str, Any]) -> List[str]:
+    colors: List[str] = []
+    for key in ["dominantColor", "color", "fontColor", "textColor"]:
+        value = classifier.get(key)
+        if isinstance(value, str) and is_hex_color(value):
+            colors.append(value)
+    for key in ["colors", "palette", "dominantColors"]:
+        value = classifier.get(key)
+        if isinstance(value, list):
+            colors.extend(str(item) for item in value if is_hex_color(str(item)))
+    text = " ".join(str(classifier.get(key) or "") for key in ["text", "visualEvidence", "rawModelOutput"])
+    colors.extend(re.findall(r"#[0-9a-fA-F]{6}\\b", text))
+    seen = set()
+    out: List[str] = []
+    for color in colors:
+        normalized = color.lower()
+        if normalized not in seen:
+            seen.add(normalized)
+            out.append(color)
+    return out[:12]
+
+
+def is_hex_color(value: str) -> bool:
+    return bool(re.fullmatch(r"#[0-9a-fA-F]{6}", str(value or "").strip()))
 
 
 def build_option_patch(

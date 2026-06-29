@@ -94,6 +94,8 @@ def load_modeling_source(catalog_path: Path) -> tuple[Dict[str, Dict[str, Any]],
 def analyze_option_shape(option: Dict[str, Any]) -> Dict[str, Any]:
     shape: Dict[str, Any] = {
         "optionKeys": sorted(str(key) for key in option.keys()),
+        "optionPaths": option_paths(option),
+        "semanticPaths": semantic_option_paths(option),
     }
     if "dataset" not in option:
         shape["datasetKind"] = "none"
@@ -145,6 +147,45 @@ def dataset_shape(dataset: Any) -> Dict[str, Any]:
             )
         return shape
     return {"datasetKind": type_name(dataset)}
+
+
+def option_paths(value: Any, prefix: str = "") -> List[str]:
+    paths: List[str] = []
+    if isinstance(value, dict):
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else str(key)
+            paths.append(path)
+            paths.extend(option_paths(child, path))
+    elif isinstance(value, list):
+        sample = next((item for item in value if item is not None), None)
+        if sample is not None:
+            paths.extend(option_paths(sample, f"{prefix}[]"))
+    return paths
+
+
+def semantic_option_paths(option: Dict[str, Any]) -> Dict[str, List[str]]:
+    paths = option_paths(option)
+    buckets: Dict[str, List[str]] = {
+        "color": [],
+        "fontSize": [],
+        "title": [],
+        "unit": [],
+        "dataset": [],
+    }
+    for path in paths:
+        normalized = path.lower()
+        leaf = normalized.rsplit(".", 1)[-1].replace("[]", "")
+        if path == "dataset" or path.startswith("dataset."):
+            buckets["dataset"].append(path)
+        if leaf in {"color", "fill", "stroke", "backgroundcolor", "bgcolor", "bordercolor", "fontcolor", "textcolor"} or leaf.endswith("color"):
+            buckets["color"].append(path)
+        if leaf in {"fontsize", "textsize", "numbersize", "valuesize", "labelsize", "indicatortextsize", "timesize", "bordertitlesize", "size"}:
+            buckets["fontSize"].append(path)
+        if leaf in {"title", "text", "name", "labeltext", "borderTitle".lower()} or leaf.endswith("title"):
+            buckets["title"].append(path)
+        if leaf in {"unit", "suffixtext"} or leaf.endswith("unit"):
+            buckets["unit"].append(path)
+    return {key: sorted(set(value)) for key, value in buckets.items()}
 
 
 def dimension_keys(dimensions: List[Any]) -> List[str]:
