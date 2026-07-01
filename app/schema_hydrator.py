@@ -165,6 +165,7 @@ def build_global_virtual_components(
         "text": text,
         "paddleOcrText": text,
         "visualEvidence": "center shield with AI text, circular base, multiple risk-warning metric nodes",
+        "palette": collect_classifier_colors(nodes),
     }
     option_blueprint = library.option_blueprint(record.key)
     schema_shape = library.option_shape(record.key)
@@ -246,6 +247,7 @@ def build_schema_semantic_aggregate_components(nodes: List[Node], library: Compo
             "text": text,
             "paddleOcrText": text,
             "visualEvidence": f"schema terms matched: {', '.join(sorted(matched_terms))}",
+            "palette": collect_classifier_colors(contributors),
         }
         source_dataset = {"dimensions": ["name", "value"], "source": []}
         option_patch = build_option_patch(
@@ -432,6 +434,24 @@ def collect_classifier_text(nodes: List[Node]) -> str:
     return " ".join(parts)
 
 
+def collect_classifier_colors(nodes: List[Node]) -> List[str]:
+    colors: List[str] = []
+    for node in nodes:
+        classifier = node.features.get("contentClassifier") or {}
+        colors.extend(extract_colors(classifier))
+    seen = set()
+    out: List[str] = []
+    for color in colors:
+        normalized = str(color).lower()
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        out.append(str(color))
+        if len(out) >= 12:
+            break
+    return out
+
+
 def looks_like_ai_shield_scene(text: str) -> bool:
     normalized = " ".join(str(text or "").split())
     if "AI" not in normalized:
@@ -461,7 +481,7 @@ def repair_component_record_for_schema(
     nodes: List[Node],
 ) -> ComponentRecord:
     classifier = node.features.get("contentClassifier") or {}
-    if node.type not in {"Border", "Panel"} and ocr_items_form_table(ocr_items(classifier)):
+    if node.type not in {"Border", "Panel"} and should_repair_as_table(classifier):
         table_record = library.by_key.get("TableScrollBoard") or library.by_key.get("TablesBasic")
         if table_record:
             return table_record
@@ -471,6 +491,15 @@ def repair_component_record_for_schema(
         if text_record:
             return text_record
     return record
+
+
+def should_repair_as_table(classifier: Dict[str, Any]) -> bool:
+    content_type = str(classifier.get("contentType") or "")
+    visual_form = str(classifier.get("visualForm") or classifier.get("llmVisualForm") or "")
+    items = ocr_items(classifier)
+    if content_type == "table" or "table" in visual_form.lower():
+        return ocr_items_form_table(items)
+    return False
 
 
 def repair_component_bbox_for_schema(
@@ -926,14 +955,11 @@ def infer_virtual_content_record(classifier: Dict[str, Any], library: ComponentL
     )
     visual_form = str(classifier.get("llmVisualForm") or "").lower()
     llm_component_id = str(classifier.get("llmComponentId") or "")
+    content_type = str(classifier.get("contentType") or "")
     items = ocr_items(classifier)
 
     preferred = ""
-    if "任务名称" in text and "责任单位" in text:
-        preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
-    elif ocr_items_form_table(items):
-        preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
-    elif looks_like_simple_scroll_table(text):
+    if (content_type == "table" or "table" in visual_form) and (ocr_items_form_table(items) or looks_like_simple_scroll_table(text)):
         preferred = "TableScrollBoard" if "TableScrollBoard" in library.by_key else "TablesBasic"
     elif "学历" in text or any(token in text for token in ["高中以下", "本科", "硕士"]):
         preferred = "liquidBar"
@@ -1719,7 +1745,7 @@ def apply_semantic_facts_to_option(option: Dict[str, Any], facts: Dict[str, Any]
             set_option_path_if_compatible(option, path, unit, overwrite_empty=True)
     if colors:
         for index, path in enumerate(semantic_paths.get("color") or []):
-            set_option_path_if_compatible(option, path, colors[index % len(colors)], overwrite_empty=False)
+            set_option_path_if_compatible(option, path, color_for_option_path(path, colors, index), overwrite_empty=True)
 
     text = option.get("dataset") if isinstance(option.get("dataset"), str) else title
     if text:
@@ -1786,6 +1812,11 @@ def extract_colors(classifier: Dict[str, Any]) -> List[str]:
         value = classifier.get(key)
         if isinstance(value, list):
             colors.extend(str(item) for item in value if is_hex_color(str(item)))
+    signature = classifier.get("visualSignature")
+    if isinstance(signature, dict):
+        value = signature.get("palette")
+        if isinstance(value, list):
+            colors.extend(str(item) for item in value if is_hex_color(str(item)))
     text = " ".join(str(classifier.get(key) or "") for key in ["text", "visualEvidence", "rawModelOutput"])
     colors.extend(re.findall(r"#[0-9a-fA-F]{6}\\b", text))
     seen = set()
@@ -1800,6 +1831,35 @@ def extract_colors(classifier: Dict[str, Any]) -> List[str]:
 
 def is_hex_color(value: str) -> bool:
     return bool(re.fullmatch(r"#[0-9a-fA-F]{6}", str(value or "").strip()))
+
+
+def color_for_option_path(path: str, colors: List[str], index: int) -> str:
+    if not colors:
+        return "#ffffff"
+    normalized = str(path or "").lower()
+    leaf = normalized.rsplit(".", 1)[-1].replace("[]", "")
+    visible_colors = [color for color in colors if color_luminance(color) >= 0.22] or colors
+    bright_colors = [color for color in colors if color_luminance(color) >= 0.48] or visible_colors
+    dark_colors = [color for color in colors if color_luminance(color) <= 0.32] or colors
+
+    if any(token in normalized for token in ["font", "text", "label", "legend", "axislabel", "title"]):
+        return bright_colors[index % len(bright_colors)]
+    if any(token in leaf for token in ["background", "bgc"]) or leaf in {"basecolor", "shadowcolor"}:
+        return dark_colors[index % len(dark_colors)]
+    return visible_colors[index % len(visible_colors)]
+
+
+def color_luminance(color: str) -> float:
+    text = str(color or "").strip().lstrip("#")
+    if len(text) != 6:
+        return 0.0
+    try:
+        r = int(text[0:2], 16) / 255.0
+        g = int(text[2:4], 16) / 255.0
+        b = int(text[4:6], 16) / 255.0
+    except ValueError:
+        return 0.0
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
 
 def build_option_patch(

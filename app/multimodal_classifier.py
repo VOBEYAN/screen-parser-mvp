@@ -685,6 +685,9 @@ class MultimodalComponentClassifier:
             "localVisualForm": effective_result.get("localVisualForm"),
             "localVisualSignature": effective_result.get("localVisualSignature"),
             "visualSignature": effective_result.get("visualSignature"),
+            "palette": effective_result.get("palette") or effective_result.get("dominantColors") or [],
+            "dominantColors": effective_result.get("dominantColors") or effective_result.get("palette") or [],
+            "dominantColor": effective_result.get("dominantColor"),
             "extractedLineData": effective_result.get("extractedLineData"),
             "modelSource": effective_result.get("modelSource"),
             "rawModelOutput": str(result.get("rawModelOutput") or "")[:500],
@@ -1303,6 +1306,11 @@ def add_crop_visual_signature(result: Dict[str, object], crop: Image.Image) -> D
         updated["visualEvidence"] = " | ".join(item for item in [previous, evidence] if item)
         updated["reason"] = f"{updated.get('reason', '')}; visual signature -> {visual_form}".strip("; ")
     updated["visualSignature"] = signature
+    palette = signature.get("palette")
+    if isinstance(palette, list) and palette:
+        updated["palette"] = palette
+        updated["dominantColors"] = palette
+        updated["dominantColor"] = palette[0]
     return updated
 
 
@@ -1319,6 +1327,7 @@ def infer_crop_visual_signature(crop: Image.Image, content_type: str, text: str 
     saturation = hsv[:, :, 1]
     mask = ((value > 45) & (saturation > 35)).astype(np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    palette = dominant_hex_palette(rgb, hsv, mask)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     boxes = []
     for contour in contours:
@@ -1419,6 +1428,7 @@ def infer_crop_visual_signature(crop: Image.Image, content_type: str, text: str 
     return {
         "visualForm": visual_form,
         "visualEvidence": " ".join(item for item in evidence_parts if item),
+        "palette": palette,
         "metrics": {
             "colorCount": color_count,
             "tallBarCount": len(tall_boxes),
@@ -1440,6 +1450,49 @@ def infer_crop_visual_signature(crop: Image.Image, content_type: str, text: str 
         "barLineScore": line_signature.get("barLineScore"),
         "slopedSegmentCount": line_signature.get("slopedSegmentCount"),
     }
+
+
+def dominant_hex_palette(rgb: np.ndarray, hsv: np.ndarray, mask: np.ndarray, limit: int = 8) -> List[str]:
+    if rgb.size == 0 or hsv.size == 0:
+        return []
+    selected_mask = mask.astype(bool)
+    saturation = hsv[:, :, 1]
+    value = hsv[:, :, 2]
+    selected_mask &= saturation > 32
+    selected_mask &= value > 48
+    selected_mask &= value < 250
+    if int(np.count_nonzero(selected_mask)) < 24:
+        return []
+
+    pixels = rgb[selected_mask]
+    hsv_pixels = hsv[selected_mask]
+    bins: Dict[Tuple[int, int, int], List[int]] = {}
+    for index, hsv_pixel in enumerate(hsv_pixels):
+        hue_bin = int(hsv_pixel[0] // 10)
+        sat_bin = int(hsv_pixel[1] // 48)
+        val_bin = int(hsv_pixel[2] // 48)
+        bins.setdefault((hue_bin, sat_bin, val_bin), []).append(index)
+
+    colors: List[Tuple[int, str]] = []
+    for indexes in bins.values():
+        if len(indexes) < max(12, int(len(pixels) * 0.008)):
+            continue
+        cluster = pixels[indexes]
+        r, g, b = np.median(cluster, axis=0).astype(int).tolist()
+        if max(r, g, b) - min(r, g, b) < 14:
+            continue
+        colors.append((len(indexes), f"#{r:02x}{g:02x}{b:02x}"))
+
+    seen = set()
+    out: List[str] = []
+    for _count, color in sorted(colors, key=lambda item: item[0], reverse=True):
+        if color in seen:
+            continue
+        seen.add(color)
+        out.append(color)
+        if len(out) >= limit:
+            break
+    return out
 
 
 def line_chart_signature(

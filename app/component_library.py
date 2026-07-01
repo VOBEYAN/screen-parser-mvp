@@ -177,7 +177,15 @@ def semantic_option_paths(option: Dict[str, Any]) -> Dict[str, List[str]]:
         leaf = normalized.rsplit(".", 1)[-1].replace("[]", "")
         if path == "dataset" or path.startswith("dataset."):
             buckets["dataset"].append(path)
-        if leaf in {"color", "fill", "stroke", "backgroundcolor", "bgcolor", "bordercolor", "fontcolor", "textcolor"} or leaf.endswith("color"):
+        parent = normalized.rsplit(".", 1)[0] if "." in normalized else ""
+        if (
+            leaf in {"color", "colors", "colorlist", "fill", "stroke", "backgroundcolor", "bgcolor", "headerbgc", "oddrowbgc", "evenrowbgc", "bordercolor", "fontcolor", "textcolor"}
+            or leaf.endswith("color")
+            or leaf.endswith("colors")
+            or leaf.endswith("bgc")
+            or (parent.endswith("gradient") and leaf in {"from", "to"})
+            or (parent.endswith("colorstops[]") and leaf == "color")
+        ):
             buckets["color"].append(path)
         if leaf in {"fontsize", "textsize", "numbersize", "valuesize", "labelsize", "indicatortextsize", "timesize", "bordertitlesize", "size"}:
             buckets["fontSize"].append(path)
