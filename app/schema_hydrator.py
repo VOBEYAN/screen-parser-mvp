@@ -512,7 +512,131 @@ def repair_component_bbox_for_schema(
         label_bbox = title_label_bbox_from_ocr_items(ocr_items(classifier), node.bbox.to_dict())
         if label_bbox:
             return label_bbox
+    if record.category in CONTENT_CATEGORIES and node.type in INNER_CONTENT_TYPES:
+        constrained = content_bbox_inside_panel(node, classifier, nodes)
+        if constrained:
+            return constrained
     return node.bbox.to_dict()
+
+
+def content_bbox_inside_panel(
+    node: Node,
+    classifier: Dict[str, Any],
+    nodes: List[Node],
+) -> Optional[Dict[str, float]]:
+    panel = smallest_containing_panel(node, nodes)
+    if not panel:
+        return None
+    panel_bbox = panel.bbox.to_dict()
+    current = node.bbox.to_dict()
+    inner = panel_inner_bbox(panel, panel_top_title_items(panel))
+    clamped = clamp_bbox_to_rect(current, inner)
+    if bbox_area(clamped) < max(400.0, bbox_area(current) * 0.54):
+        return None
+
+    items_bbox = content_ocr_bbox(node, ocr_items(classifier))
+    if items_bbox and bbox_containment(clamped, items_bbox) >= 0.82:
+        clamped = union_rects([clamped, pad_bbox(items_bbox, max(8.0, node.bbox.w * 0.035), max(8.0, node.bbox.h * 0.05))], bounds=inner)
+
+    if bbox_iou(current, clamped) > 0.985:
+        return None
+    return round_bbox(clamped)
+
+
+def smallest_containing_panel(node: Node, nodes: List[Node]) -> Optional[Node]:
+    current = node.bbox.to_dict()
+    candidates = []
+    for panel in nodes:
+        if panel.node_id == node.node_id or panel.type not in {"Border", "Panel"}:
+            continue
+        panel_bbox = panel.bbox.to_dict()
+        contain = bbox_containment(panel_bbox, current)
+        if contain < 0.56 and not center_in_bbox(current, panel_bbox):
+            continue
+        if bbox_area(panel_bbox) <= bbox_area(current) * 0.82:
+            continue
+        candidates.append(panel)
+    candidates.sort(key=lambda item: item.bbox.area)
+    return candidates[0] if candidates else None
+
+
+def panel_inner_bbox(panel: Node, title_items: List[Dict[str, Any]]) -> Dict[str, float]:
+    pad_x = min(max(8.0, panel.bbox.w * 0.035), 20.0)
+    pad_y = min(max(8.0, panel.bbox.h * 0.035), 16.0)
+    left = panel.bbox.x + pad_x
+    right = panel.bbox.right - pad_x
+    bottom = panel.bbox.bottom - pad_y
+    if title_items:
+        title_bottom = max(float((item.get("bbox") or {}).get("y") or 0) + float((item.get("bbox") or {}).get("h") or 0) for item in title_items)
+        top = max(panel.bbox.y + max(24.0, panel.bbox.h * 0.08), title_bottom + pad_y)
+    else:
+        top = panel.bbox.y + pad_y
+    if bottom <= top + 24.0:
+        top = panel.bbox.y + pad_y
+        bottom = panel.bbox.bottom - pad_y
+    return {"x": left, "y": top, "w": max(24.0, right - left), "h": max(24.0, bottom - top)}
+
+
+def content_ocr_bbox(node: Node, items: List[Dict[str, Any]]) -> Optional[Dict[str, float]]:
+    selected = []
+    node_bbox = node.bbox.to_dict()
+    for item in items:
+        bbox = item.get("bbox") if isinstance(item.get("bbox"), dict) else {}
+        text = str(item.get("text") or "").strip()
+        if not text or not bbox:
+            continue
+        if bbox_containment(node_bbox, bbox) >= 0.35 or center_in_bbox(bbox, node_bbox):
+            selected.append(item)
+    if len(selected) < 2:
+        return None
+    left = min(float((item.get("bbox") or {}).get("x") or 0) for item in selected)
+    top = min(float((item.get("bbox") or {}).get("y") or 0) for item in selected)
+    right = max(float((item.get("bbox") or {}).get("x") or 0) + float((item.get("bbox") or {}).get("w") or 0) for item in selected)
+    bottom = max(float((item.get("bbox") or {}).get("y") or 0) + float((item.get("bbox") or {}).get("h") or 0) for item in selected)
+    return {"x": left, "y": top, "w": right - left, "h": bottom - top}
+
+
+def clamp_bbox_to_rect(bbox: Dict[str, Any], bounds: Dict[str, Any]) -> Dict[str, float]:
+    left = max(float(bbox.get("x") or 0), float(bounds.get("x") or 0))
+    top = max(float(bbox.get("y") or 0), float(bounds.get("y") or 0))
+    right = min(float(bbox.get("x") or 0) + float(bbox.get("w") or 0), float(bounds.get("x") or 0) + float(bounds.get("w") or 0))
+    bottom = min(float(bbox.get("y") or 0) + float(bbox.get("h") or 0), float(bounds.get("y") or 0) + float(bounds.get("h") or 0))
+    return {"x": left, "y": top, "w": max(0.0, right - left), "h": max(0.0, bottom - top)}
+
+
+def union_rects(rects: List[Dict[str, Any]], bounds: Optional[Dict[str, Any]] = None) -> Dict[str, float]:
+    left = min(float(rect.get("x") or 0) for rect in rects)
+    top = min(float(rect.get("y") or 0) for rect in rects)
+    right = max(float(rect.get("x") or 0) + float(rect.get("w") or 0) for rect in rects)
+    bottom = max(float(rect.get("y") or 0) + float(rect.get("h") or 0) for rect in rects)
+    out = {"x": left, "y": top, "w": right - left, "h": bottom - top}
+    return clamp_bbox_to_rect(out, bounds) if bounds else out
+
+
+def pad_bbox(bbox: Dict[str, Any], pad_x: float, pad_y: float) -> Dict[str, float]:
+    return {
+        "x": float(bbox.get("x") or 0) - pad_x,
+        "y": float(bbox.get("y") or 0) - pad_y,
+        "w": float(bbox.get("w") or 0) + pad_x * 2.0,
+        "h": float(bbox.get("h") or 0) + pad_y * 2.0,
+    }
+
+
+def round_bbox(bbox: Dict[str, Any]) -> Dict[str, float]:
+    return {
+        "x": round(float(bbox.get("x") or 0), 2),
+        "y": round(float(bbox.get("y") or 0), 2),
+        "w": round(max(0.0, float(bbox.get("w") or 0)), 2),
+        "h": round(max(0.0, float(bbox.get("h") or 0)), 2),
+    }
+
+
+def center_in_bbox(inner: Dict[str, Any], outer: Dict[str, Any]) -> bool:
+    cx, cy = bbox_center(inner)
+    return (
+        float(outer.get("x") or 0) <= cx <= float(outer.get("x") or 0) + float(outer.get("w") or 0)
+        and float(outer.get("y") or 0) <= cy <= float(outer.get("y") or 0) + float(outer.get("h") or 0)
+    )
 
 
 def should_render_panel_title_as_text(
@@ -1012,6 +1136,8 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
     for item in components:
         if is_chart_text_artifact(item, components):
             suppressed.add(str(item.get("id") or ""))
+        if is_duplicate_border_title(item, components):
+            suppressed.add(str(item.get("id") or ""))
 
     for outer in components:
         outer_id = str(outer.get("id") or "")
@@ -1024,10 +1150,6 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
             str(item)
             for item in outer.get("contributorNodeIds", [])
         } if isinstance(outer.get("contributorNodeIds"), list) else set()
-
-        if outer_category == "Borders" and is_container_only_border(outer, components):
-            suppressed.add(outer_id)
-            continue
 
         for inner in components:
             inner_id = str(inner.get("id") or "")
@@ -1078,30 +1200,31 @@ def suppress_overlapping_components(components: List[Dict[str, Any]]) -> List[Di
     return [item for item in components if str(item.get("id") or "") not in suppressed]
 
 
-def is_container_only_border(border: Dict[str, Any], components: List[Dict[str, Any]]) -> bool:
-    border_id = str(border.get("id") or "")
-    border_bbox = border.get("bbox") or {}
-    text = " ".join(
-        str((border.get("dataSource") or {}).get(key) or "")
-        for key in ["ocrText", "modelText"]
-    ).strip()
-    if len(text) <= 8:
+def is_duplicate_border_title(component: Dict[str, Any], components: List[Dict[str, Any]]) -> bool:
+    category = str(component.get("category") or "")
+    if category not in {"Title", "Texts", "Decorates"}:
         return False
-
-    has_title = False
-    has_content = False
-    for item in components:
-        if str(item.get("id") or "") == border_id:
+    text = normalize_title_text(string_component_text(component))
+    if not text:
+        return False
+    bbox = component.get("bbox") or {}
+    for border in components:
+        if border is component or str(border.get("category") or "") != "Borders":
             continue
-        bbox = item.get("bbox") or {}
-        category = str(item.get("category") or "")
-        contain = bbox_containment(border_bbox, bbox)
-        overlap = bbox_iou(border_bbox, bbox)
-        if category == "Title" and (contain >= 0.7 or overlap > 0.04):
-            has_title = True
-        if category in CONTENT_CATEGORIES and (contain >= 0.72 or overlap > 0.12):
-            has_content = True
-        if has_title and has_content:
+        facts = border.get("recognitionFacts") if isinstance(border.get("recognitionFacts"), dict) else {}
+        border_title = normalize_title_text(str(facts.get("title") or ""))
+        if not border_title or text != border_title:
+            continue
+        border_bbox = border.get("bbox") or {}
+        top_band = {
+            "x": float(border_bbox.get("x") or 0),
+            "y": float(border_bbox.get("y") or 0),
+            "w": float(border_bbox.get("w") or 0),
+            "h": max(38.0, min(float(border_bbox.get("h") or 0) * 0.18, 64.0)),
+        }
+        if bbox_containment(border_bbox, bbox) >= 0.5 and (
+            bbox_containment(top_band, bbox) >= 0.35 or bbox_iou(top_band, bbox) > 0.01
+        ):
             return True
     return False
 
@@ -1143,6 +1266,10 @@ def string_component_text(component: Dict[str, Any]) -> str:
         return dataset
     source = component.get("dataSource") if isinstance(component.get("dataSource"), dict) else {}
     return str(source.get("ocrText") or source.get("modelText") or "")
+
+
+def normalize_title_text(text: str) -> str:
+    return re.sub(r"\s+", "", str(text or "")).strip()
 
 
 def looks_like_axis_or_legend_text(text: str) -> bool:
@@ -1450,6 +1577,13 @@ def infer_dataset(node: Node, classifier: Dict[str, Any], category: str) -> Dict
         ordered_pairs = explicit_ordered_number_pairs(model_text, ocr_text)
         if len(ordered_pairs) >= 2:
             model_pairs = ordered_pairs
+    if len(model_pairs) < 2:
+        spatial_pairs = spatial_value_label_pairs(ocr_items(classifier), category)
+        if len(spatial_pairs) >= 2:
+            model_pairs = [
+                {"name": item.get("name"), "value": item.get("value"), "raw": item.get("valueText")}
+                for item in spatial_pairs
+            ]
     if len(model_pairs) >= 2:
         if category == "Tables":
             return table_dataset_from_text(model_text) or table_dataset(model_pairs)
@@ -1675,11 +1809,12 @@ def build_recognition_facts(
     bbox: Dict[str, Any],
     schema_shape: Dict[str, Any],
 ) -> Dict[str, Any]:
-    rows = normalized_rows(dataset_rows(dataset))
+    rows = [] if category == "Borders" else normalized_rows(dataset_rows(dataset))
     text = classifier_text(classifier)
-    title = first_title_text(classifier)
+    title = recognition_title_text(category, classifier, bbox)
     values = [float(row.get("value") or 0) for row in rows]
     labels = [str(row.get("name") or f"指标{index + 1}") for index, row in enumerate(rows)]
+    ocr_groups = grouped_ocr_facts(classifier, category)
     return {
         "componentId": component_id,
         "category": category,
@@ -1697,9 +1832,162 @@ def build_recognition_facts(
         "unit": infer_unit(text),
         "colors": extract_colors(classifier),
         "series": dataset_rows(dataset)[:24],
+        "ocrGroups": ocr_groups,
         "optionKeys": schema_shape.get("optionKeys") or [],
         "semanticPaths": schema_shape.get("semanticPaths") or {},
     }
+
+
+def recognition_title_text(category: str, classifier: Dict[str, Any], bbox: Dict[str, Any]) -> str:
+    if category == "Borders":
+        title_items = title_like_ocr_items(ocr_items(classifier))
+        if title_items:
+            rows = ocr_item_rows(title_items)
+            if rows:
+                top_limit = float(bbox.get("y") or 0) + max(38.0, min(float(bbox.get("h") or 0) * 0.16, 54.0))
+                row = next(
+                    (
+                        item
+                        for item in rows[:4]
+                        if min(float((entry.get("bbox") or {}).get("y") or 0) for entry in item) <= top_limit
+                        if len(item) <= 2
+                        and not looks_like_table_header_text(" ".join(str(entry.get("text") or "") for entry in item))
+                    ),
+                    [],
+                )
+                if not row:
+                    return ""
+                return " ".join(str(item.get("text") or "").strip() for item in row if str(item.get("text") or "").strip())[:80]
+        return ""
+    return first_title_text(classifier)
+
+
+def grouped_ocr_facts(classifier: Dict[str, Any], category: str) -> Dict[str, Any]:
+    items = ocr_items(classifier)
+    rows = ocr_item_rows(items)
+    row_payload = [
+        {
+            "texts": [str(item.get("text") or "") for item in row],
+            "bbox": round_bbox(union_ocr_items(row)),
+        }
+        for row in rows[:12]
+        if row
+    ]
+    groups: Dict[str, Any] = {"rows": row_payload}
+    spatial_pairs = spatial_value_label_pairs(items, category)
+    if spatial_pairs:
+        groups["pairs"] = spatial_pairs
+    return groups
+
+
+def union_ocr_items(items: List[Dict[str, Any]]) -> Dict[str, float]:
+    boxes = [item.get("bbox") for item in items if isinstance(item.get("bbox"), dict)]
+    if not boxes:
+        return {"x": 0.0, "y": 0.0, "w": 0.0, "h": 0.0}
+    left = min(float(box.get("x") or 0) for box in boxes)
+    top = min(float(box.get("y") or 0) for box in boxes)
+    right = max(float(box.get("x") or 0) + float(box.get("w") or 0) for box in boxes)
+    bottom = max(float(box.get("y") or 0) + float(box.get("h") or 0) for box in boxes)
+    return {"x": left, "y": top, "w": right - left, "h": bottom - top}
+
+
+def spatial_value_label_pairs(items: List[Dict[str, Any]], category: str) -> List[Dict[str, Any]]:
+    if category in {"Bars", "Funnels", "Mores"}:
+        return spatial_bar_pairs(items)
+    if category == "Pies":
+        return spatial_percent_pairs(items)
+    return []
+
+
+def spatial_bar_pairs(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    labels = [
+        item for item in items
+        if is_label_item(item) and not looks_like_unit_or_title(str(item.get("text") or ""))
+    ]
+    numbers = [
+        item for item in items
+        if NUMBER_RE.fullmatch(str(item.get("text") or "").strip()) and not str(item.get("text") or "").strip().endswith("%")
+    ]
+    if len(labels) < 2 or len(numbers) < 2:
+        return []
+    bottom_y = max(bbox_center(item.get("bbox") or {})[1] for item in labels)
+    bottom_labels = [
+        item for item in labels
+        if bbox_center(item.get("bbox") or {})[1] >= bottom_y - max(16.0, float((item.get("bbox") or {}).get("h") or 0) * 1.2)
+    ]
+    if len(bottom_labels) < 2:
+        return []
+    bottom_labels.sort(key=lambda item: bbox_center(item.get("bbox") or {})[0])
+    pairs = []
+    used_numbers: set[int] = set()
+    for label in bottom_labels[:24]:
+        lx, ly = bbox_center(label.get("bbox") or {})
+        candidates = []
+        for index, number in enumerate(numbers):
+            if index in used_numbers:
+                continue
+            nx, ny = bbox_center(number.get("bbox") or {})
+            if ny > ly:
+                continue
+            dx = abs(nx - lx)
+            dy = max(0.0, ly - ny)
+            candidates.append((dx + dy * 0.08, index, number))
+        if not candidates:
+            continue
+        _, index, number = min(candidates, key=lambda item: item[0])
+        used_numbers.add(index)
+        pairs.append(
+            {
+                "name": str(label.get("text") or ""),
+                "value": parse_bar_number(str(number.get("text") or "")),
+                "valueText": str(number.get("text") or ""),
+                "labelBBox": round_bbox(label.get("bbox") or {}),
+                "valueBBox": round_bbox(number.get("bbox") or {}),
+            }
+        )
+    return pairs if len(pairs) >= 2 else []
+
+
+def spatial_percent_pairs(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    percents = [
+        item for item in items
+        if NUMBER_RE.fullmatch(str(item.get("text") or "").strip()) and str(item.get("text") or "").strip().endswith("%")
+    ]
+    labels = [
+        item for item in items
+        if is_label_item(item) and not looks_like_unit_or_title(str(item.get("text") or ""))
+    ]
+    if len(percents) < 2 or len(labels) < 2:
+        return []
+    used_labels: set[int] = set()
+    pairs = []
+    for percent in percents[:24]:
+        px, py = bbox_center(percent.get("bbox") or {})
+        candidates = []
+        for index, label in enumerate(labels):
+            if index in used_labels:
+                continue
+            lx, ly = bbox_center(label.get("bbox") or {})
+            candidates.append((abs(lx - px) + abs(ly - py) * 0.72, index, label))
+        if not candidates:
+            continue
+        _, index, label = min(candidates, key=lambda item: item[0])
+        used_labels.add(index)
+        pairs.append(
+            {
+                "name": str(label.get("text") or ""),
+                "value": parse_number(str(percent.get("text") or "")),
+                "valueText": str(percent.get("text") or ""),
+                "labelBBox": round_bbox(label.get("bbox") or {}),
+                "valueBBox": round_bbox(percent.get("bbox") or {}),
+            }
+        )
+    return pairs if len(pairs) >= 2 else []
+
+
+def is_label_item(item: Dict[str, Any]) -> bool:
+    text = str(item.get("text") or "").strip()
+    return bool(text and not NUMBER_RE.fullmatch(text) and not DATE_LABEL_RE.fullmatch(text) and not looks_like_noise(text))
 
 
 def hydrate_option_from_facts(
