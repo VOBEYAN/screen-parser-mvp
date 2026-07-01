@@ -105,8 +105,8 @@ class ComponentMatcher:
 
     def _merge_scores(self, base_score: float, visual_score: Optional[float]) -> float:
         if visual_score is None:
-            return min(base_score, 0.99)
-        return min(0.99, 0.34 * base_score + 0.66 * visual_score)
+            return max(0.0, min(base_score, 0.99))
+        return max(0.0, min(0.99, 0.34 * base_score + 0.66 * visual_score))
 
 
 def chart_keyword_bonus(record: ComponentRecord) -> float:

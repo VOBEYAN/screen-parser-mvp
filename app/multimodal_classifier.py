@@ -791,16 +791,20 @@ class MultimodalComponentClassifier:
             elif target_visual_form and profile_score < 0.5:
                 score -= 0.08
             raw_score = score
+            display_score = normalized_display_score(raw_score, upper=0.99)
+            display_profile_score = normalized_display_score(profile_score, upper=1.0)
             scored.append(
                 {
                     "componentId": record.key,
                     "title": record.title,
                     "category": record.category,
                     "schema": record.schema,
-                    "score": round(min(0.99, raw_score), 4),
-                    "rawScore": round(raw_score, 6),
+                    "score": round(display_score, 4),
+                    "rawScore": round(display_score, 4),
+                    "_rankScore": raw_score,
+                    "_profileRankScore": profile_score,
                     "visualScore": round(visual_score, 4) if visual_score is not None else None,
-                    "profileScore": round(profile_score, 4),
+                    "profileScore": round(display_profile_score, 4),
                     "attributeGateScore": round(attribute_gate, 4),
                     "profileVisualForm": profile.get("visualForm") if profile else None,
                     "targetVisualForm": target_visual_form or None,
@@ -824,6 +828,8 @@ class MultimodalComponentClassifier:
                     "schema": record.schema,
                     "score": 0.95,
                     "rawScore": 0.95,
+                    "_rankScore": 0.95,
+                    "_profileRankScore": 0.95,
                     "visualScore": None,
                     "baseScore": None,
                     "llmComponentId": llm_component_id,
@@ -832,13 +838,13 @@ class MultimodalComponentClassifier:
                     "contentText": text[:80],
                 }
             )
-        scored.sort(key=lambda item: float(item.get("rawScore") or item.get("score") or 0), reverse=True)
+        scored.sort(key=lambda item: float(item.get("_rankScore") or item.get("score") or 0), reverse=True)
         if llm_component_id in self.library.by_key:
             for index, item in enumerate(scored):
                 if item.get("componentId") != llm_component_id:
                     continue
-                llm_item_raw = float(item.get("rawScore") or 0)
-                best_raw = float(scored[0].get("rawScore") or 0)
+                llm_item_raw = float(item.get("_rankScore") or 0)
+                best_raw = float(scored[0].get("_rankScore") or 0)
                 llm_attribute_gate = float(item.get("attributeGateScore") or 0)
                 local_strong_conflict = (
                     local_visual_form_is_strong(
@@ -847,11 +853,12 @@ class MultimodalComponentClassifier:
                     )
                     and llm_attribute_gate < 0.55
                 )
+                llm_profile_score = float(item.get("_profileRankScore") or item.get("profileScore") or 0)
                 should_lock_llm = (
                     not local_strong_conflict
                     and (
                         llm_decision_strength >= 0.72
-                        or (llm_confidence >= 0.82 and float(item.get("profileScore") or 0) >= 0.62)
+                        or (llm_confidence >= 0.82 and llm_profile_score >= 0.62)
                         or llm_item_raw >= best_raw - 0.08
                     )
                 )
@@ -859,12 +866,25 @@ class MultimodalComponentClassifier:
                     item["decisionSource"] = "vlm_candidate_unlocked"
                     break
                 item["decisionSource"] = "vlm_final"
-                item["rawScore"] = round(max(float(item.get("rawScore") or 0), float(scored[0].get("rawScore") or 0) + 0.001), 6)
-                item["score"] = round(min(0.99, float(item["rawScore"])), 4)
+                item["_rankScore"] = max(float(item.get("_rankScore") or 0), float(scored[0].get("_rankScore") or 0) + 0.001)
+                item["score"] = round(normalized_display_score(float(item["_rankScore"]), upper=0.99), 4)
+                item["rawScore"] = item["score"]
                 if index > 0:
                     scored.insert(0, scored.pop(index))
                 break
-        return scored[:top_k]
+        return [public_candidate_scores(item) for item in scored[:top_k]]
+
+
+def normalized_display_score(value: Any, upper: float = 1.0) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        score = 0.0
+    return max(0.0, min(upper, score))
+
+
+def public_candidate_scores(item: Dict[str, Any]) -> Dict[str, Any]:
+    return {key: value for key, value in item.items() if not str(key).startswith("_")}
 
 
 def crop_node(image: Image.Image, bbox: BBox) -> Image.Image:
@@ -1473,19 +1493,26 @@ def dominant_hex_palette(rgb: np.ndarray, hsv: np.ndarray, mask: np.ndarray, lim
         val_bin = int(hsv_pixel[2] // 48)
         bins.setdefault((hue_bin, sat_bin, val_bin), []).append(index)
 
-    colors: List[Tuple[int, str]] = []
+    colors: List[Tuple[float, int, str]] = []
     for indexes in bins.values():
         if len(indexes) < max(12, int(len(pixels) * 0.008)):
             continue
         cluster = pixels[indexes]
+        hsv_cluster = hsv_pixels[indexes]
         r, g, b = np.median(cluster, axis=0).astype(int).tolist()
         if max(r, g, b) - min(r, g, b) < 14:
             continue
-        colors.append((len(indexes), f"#{r:02x}{g:02x}{b:02x}"))
+        median_saturation = float(np.median(hsv_cluster[:, 1])) / 255.0
+        median_value = float(np.median(hsv_cluster[:, 2])) / 255.0
+        area_ratio = len(indexes) / max(1, len(pixels))
+        salience = 0.55 * median_saturation + 0.35 * median_value + 0.10 * min(1.0, area_ratio * 12.0)
+        if median_value < 0.24:
+            salience *= 0.42
+        colors.append((salience, len(indexes), f"#{r:02x}{g:02x}{b:02x}"))
 
     seen = set()
     out: List[str] = []
-    for _count, color in sorted(colors, key=lambda item: item[0], reverse=True):
+    for _salience, _count, color in sorted(colors, key=lambda item: (item[0], item[1]), reverse=True):
         if color in seen:
             continue
         seen.add(color)

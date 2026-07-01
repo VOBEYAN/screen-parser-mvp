@@ -1711,6 +1711,7 @@ def hydrate_option_from_facts(
     option = deepcopy(option_blueprint or {})
     option = merge_option_patch(option, option_patch or {})
     apply_semantic_facts_to_option(option, facts, schema_shape or {})
+    sync_series_data_from_facts(option, facts)
     return option
 
 
@@ -1745,7 +1746,9 @@ def apply_semantic_facts_to_option(option: Dict[str, Any], facts: Dict[str, Any]
             set_option_path_if_compatible(option, path, unit, overwrite_empty=True)
     if colors:
         for index, path in enumerate(semantic_paths.get("color") or []):
-            set_option_path_if_compatible(option, path, color_for_option_path(path, colors, index), overwrite_empty=True)
+            value: Any = colors if accepts_color_list_path(path) else color_for_option_path(path, colors, index)
+            set_option_path_if_compatible(option, path, value, overwrite_empty=True)
+        apply_palette_entrypoints(option, colors)
 
     text = option.get("dataset") if isinstance(option.get("dataset"), str) else title
     if text:
@@ -1755,31 +1758,192 @@ def apply_semantic_facts_to_option(option: Dict[str, Any], facts: Dict[str, Any]
             set_option_path_if_compatible(option, path, size, overwrite_empty=False)
 
 
+def sync_series_data_from_facts(option: Dict[str, Any], facts: Dict[str, Any]) -> None:
+    rows = fact_rows(facts)
+    if not rows:
+        return
+    sync_category_axes_from_facts(option, rows)
+    series = option.get("series")
+    if isinstance(series, dict):
+        sync_single_series_data(series, rows)
+    elif isinstance(series, list):
+        for item in series:
+            if isinstance(item, dict):
+                sync_single_series_data(item, rows)
+
+
+def apply_palette_entrypoints(option: Dict[str, Any], colors: List[str]) -> None:
+    if not colors or not looks_like_echarts_option(option):
+        return
+    palette = colors[:8]
+    current_color = option.get("color")
+    if current_color is None or (isinstance(current_color, list) and all(isinstance(item, str) for item in current_color)):
+        option["color"] = palette
+    current_color_list = option.get("colorList")
+    if current_color_list is None or (isinstance(current_color_list, list) and all(isinstance(item, str) for item in current_color_list)):
+        option["colorList"] = palette
+
+
+def looks_like_echarts_option(option: Dict[str, Any]) -> bool:
+    return any(key in option for key in ("series", "xAxis", "yAxis", "legend", "tooltip", "grid"))
+
+
+def sync_category_axes_from_facts(option: Dict[str, Any], rows: List[Dict[str, Any]]) -> None:
+    labels = [str(row.get("name") or f"指标{index + 1}") for index, row in enumerate(rows)]
+    for axis_key in ("xAxis", "yAxis"):
+        axis = option.get(axis_key)
+        if isinstance(axis, dict):
+            sync_single_category_axis(axis, labels)
+        elif isinstance(axis, list):
+            for item in axis:
+                if isinstance(item, dict):
+                    sync_single_category_axis(item, labels)
+
+
+def sync_single_category_axis(axis: Dict[str, Any], labels: List[str]) -> None:
+    if axis.get("type") == "category" and isinstance(axis.get("data"), list):
+        axis["data"] = labels
+
+
+def fact_rows(facts: Dict[str, Any]) -> List[Dict[str, Any]]:
+    labels = [str(item) for item in facts.get("labels") or []]
+    values = [numeric_value(item, None) for item in facts.get("values") or []]
+    rows: List[Dict[str, Any]] = []
+    for index, value in enumerate(values):
+        if value is None:
+            continue
+        rows.append({"name": labels[index] if index < len(labels) else f"指标{index + 1}", "value": float(value)})
+    return rows[:24]
+
+
+def sync_single_series_data(series: Dict[str, Any], rows: List[Dict[str, Any]]) -> None:
+    data = series.get("data")
+    if not isinstance(data, list) or not data:
+        return
+    if isinstance(data[0], dict):
+        max_value = max(float(row.get("value") or 0) for row in rows)
+        series["data"] = [series_data_object(data, row, index, max_value) for index, row in enumerate(rows)]
+        return
+    if isinstance(data[0], (int, float)) and should_replace_numeric_series(series, data, rows):
+        series["data"] = [float(row.get("value") or 0) for row in rows]
+        return
+    if isinstance(data[0], list) and should_replace_tuple_series(series):
+        series["data"] = [[index, float(row.get("value") or 0), str(row.get("name") or f"指标{index + 1}")] for index, row in enumerate(rows)]
+
+
+def series_data_object(default_data: List[Any], row: Dict[str, Any], index: int, max_value: float) -> Dict[str, Any]:
+    sample = default_data[min(index, len(default_data) - 1)]
+    out = deepcopy(sample) if isinstance(sample, dict) else {}
+    out["name"] = str(row.get("name") or out.get("name") or f"指标{index + 1}")
+    value = float(row.get("value") or 0)
+    if isinstance(out.get("value"), list):
+        out["value"] = series_tuple_value(out.get("value"), row, value, max_value)
+    else:
+        out["value"] = value
+    return out
+
+
+def series_tuple_value(sample_value: Any, row: Dict[str, Any], value: float, max_value: float) -> List[Any]:
+    sample = list(sample_value) if isinstance(sample_value, list) else []
+    if not sample:
+        return [str(row.get("name") or ""), value]
+    out = deepcopy(sample)
+    name = str(row.get("name") or "")
+    if out and isinstance(out[0], str):
+        out[0] = name
+    elif out and isinstance(out[0], (int, float)):
+        out[0] = name
+    numeric_positions = [index for index, item in enumerate(out) if isinstance(item, (int, float))]
+    if numeric_positions:
+        out[numeric_positions[-1]] = value
+        for position in numeric_positions[:-1]:
+            out[position] = max_value if max_value > value else value
+    return out
+
+
+
+def should_replace_numeric_series(series: Dict[str, Any], data: List[Any], rows: List[Dict[str, Any]]) -> bool:
+    label = series.get("label") if isinstance(series.get("label"), dict) else {}
+    tooltip = series.get("tooltip") if isinstance(series.get("tooltip"), dict) else {}
+    if label.get("show") is True:
+        return True
+    if series.get("silent") is True and tooltip.get("show") is False:
+        return False
+    return len(data) >= 2 and len(rows) >= 2
+
+
+def should_replace_tuple_series(series: Dict[str, Any]) -> bool:
+    encode = series.get("encode")
+    return isinstance(encode, dict) or str(series.get("type") or "") == "custom"
+
+
 def set_option_path_if_compatible(option: Dict[str, Any], path: str, value: Any, overwrite_empty: bool) -> bool:
-    if "[]" in path or path.startswith("dataset."):
+    if path.startswith("dataset."):
         return False
     parts = [part for part in path.split(".") if part]
     if not parts:
         return False
-    target: Any = option
-    for part in parts[:-1]:
-        if not isinstance(target, dict) or part not in target:
-            return False
-        target = target.get(part)
-    if not isinstance(target, dict) or parts[-1] not in target:
+    return set_option_path_targets([option], parts, value, overwrite_empty)
+
+
+def set_option_path_targets(targets: List[Any], parts: List[str], value: Any, overwrite_empty: bool) -> bool:
+    if not parts:
         return False
-    current = target.get(parts[-1])
+    raw_part = parts[0]
+    is_array = raw_part.endswith("[]")
+    part = raw_part[:-2] if is_array else raw_part
+    changed = False
+    if len(parts) == 1:
+        for index, target in enumerate(targets):
+            if not isinstance(target, dict) or part not in target:
+                continue
+            changed = assign_option_value(target, part, indexed_path_value(value, index), overwrite_empty) or changed
+        return changed
+
+    next_targets: List[Any] = []
+    for target in targets:
+        if not isinstance(target, dict) or part not in target:
+            continue
+        child = target.get(part)
+        if is_array and isinstance(child, list):
+            next_targets.extend(item for item in child if isinstance(item, dict))
+        elif not is_array:
+            next_targets.append(child)
+    return set_option_path_targets(next_targets, parts[1:], value, overwrite_empty)
+
+
+def assign_option_value(target: Dict[str, Any], key: str, value: Any, overwrite_empty: bool) -> bool:
+    current = target.get(key)
+    if isinstance(value, list):
+        string_values = [str(item) for item in value if isinstance(item, str) and is_hex_color(item)]
+        if isinstance(current, list) and all(isinstance(item, str) for item in current) and string_values:
+            target[key] = string_values[: max(len(current), 1)]
+            return True
+        if isinstance(current, str) and string_values and (overwrite_empty or not current):
+            target[key] = string_values[0]
+            return True
     if isinstance(value, str):
         if isinstance(current, str) and (overwrite_empty or not current):
-            target[parts[-1]] = value
+            target[key] = value
             return True
         if isinstance(current, list) and all(isinstance(item, str) for item in current):
-            target[parts[-1]] = [value, *current[1:]] if current else [value]
+            target[key] = [value, *current[1:]] if current else [value]
             return True
     if isinstance(value, (int, float)) and isinstance(current, (int, float)):
-        target[parts[-1]] = value
+        target[key] = value
         return True
     return False
+
+
+def indexed_path_value(value: Any, index: int) -> Any:
+    if isinstance(value, list) and value and all(isinstance(item, str) for item in value):
+        return value[index % len(value)]
+    return value
+
+
+def accepts_color_list_path(path: str) -> bool:
+    leaf = str(path or "").lower().rsplit(".", 1)[-1].replace("[]", "")
+    return leaf in {"colors", "colorlist"}
 
 
 def get_option_path(option: Dict[str, Any], path: str) -> Any:
