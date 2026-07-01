@@ -48,13 +48,28 @@ class VisualReferenceLibrary:
             features = item.get("features") or item.get("feature") or {}
             if not component_id or not features:
                 continue
+            image_path = str(item.get("imagePath", ""))
+            category = str(item.get("category", ""))
+            feature_payload = dict(features)
+            if category == "Borders":
+                reference_image_path = Path(image_path)
+                if not reference_image_path.is_absolute():
+                    reference_image_path = json_path.parent / image_path
+                if reference_image_path.exists():
+                    try:
+                        feature_payload["borderShell"] = extract_image_features(
+                            load_bgr_image(str(reference_image_path)),
+                            focus="border_shell",
+                        )
+                    except Exception:
+                        pass
             references.append(
                 VisualReference(
                     component_id=str(component_id),
                     title=str(item.get("title", "")),
-                    category=str(item.get("category", "")),
-                    image_path=str(item.get("imagePath", "")),
-                    features=features,
+                    category=category,
+                    image_path=image_path,
+                    features=feature_payload,
                 )
             )
         return cls(references)
@@ -67,7 +82,12 @@ class VisualReferenceLibrary:
         reference = self.by_component_id.get(component_id)
         if not reference:
             return None
-        return visual_similarity(crop_features, reference.features)
+        reference_features = reference.features
+        if crop_features.get("_focus") == "border_shell" and reference.category == "Borders":
+            shell_features = reference.features.get("borderShell")
+            if isinstance(shell_features, dict) and shell_features:
+                reference_features = shell_features
+        return visual_similarity(crop_features, reference_features)
 
 
 def load_bgr_image(image_path: str) -> np.ndarray:
@@ -96,7 +116,7 @@ def extract_image_features_from_path(image_path: str) -> Dict[str, object]:
     return extract_image_features(load_bgr_image(image_path))
 
 
-def extract_crop_features(image: np.ndarray, bbox: BBox) -> Dict[str, object]:
+def extract_crop_features(image: np.ndarray, bbox: BBox, focus: str = "content") -> Dict[str, object]:
     height, width = image.shape[:2]
     x1 = max(0, int(round(bbox.x)))
     y1 = max(0, int(round(bbox.y)))
@@ -104,15 +124,19 @@ def extract_crop_features(image: np.ndarray, bbox: BBox) -> Dict[str, object]:
     y2 = min(height, int(round(bbox.bottom)))
     if x2 <= x1 or y2 <= y1:
         return {}
-    return extract_image_features(image[y1:y2, x1:x2])
+    return extract_image_features(image[y1:y2, x1:x2], focus=focus)
 
 
-def extract_image_features(image: np.ndarray) -> Dict[str, object]:
+def extract_image_features(image: np.ndarray, focus: str = "content") -> Dict[str, object]:
     bgr = ensure_bgr(image)
     if bgr.size == 0:
         return {}
-    bgr = trim_visual_content(bgr)
-    bgr = isolate_data_region(bgr)
+    focus = "border_shell" if focus == "border_shell" else "content"
+    if focus == "border_shell":
+        bgr = border_shell_view(bgr)
+    else:
+        bgr = trim_visual_content(bgr)
+        bgr = isolate_data_region(bgr)
 
     height, width = bgr.shape[:2]
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
@@ -139,9 +163,14 @@ def extract_image_features(image: np.ndarray) -> Dict[str, object]:
         cv2.resize(gray, (16, 16), interpolation=cv2.INTER_AREA).astype(np.float32).reshape(-1)
     )
     hash_bits = perceptual_hash(gray)
-    structural = extract_structural_features(gray, hsv, edges, content_mask)
+    structural = (
+        extract_border_structural_features(gray, hsv, edges, content_mask)
+        if focus == "border_shell"
+        else extract_structural_features(gray, hsv, edges, content_mask)
+    )
 
     return {
+        "_focus": focus,
         "width": int(width),
         "height": int(height),
         "aspectRatio": round(float(width) / float(max(height, 1)), 5),
@@ -158,6 +187,35 @@ def extract_image_features(image: np.ndarray) -> Dict[str, object]:
         "hash": hash_bits,
         "structural": structural,
     }
+
+
+def border_shell_view(image: np.ndarray) -> np.ndarray:
+    bgr = ensure_bgr(image)
+    if bgr.size == 0:
+        return bgr
+    h, w = bgr.shape[:2]
+    mask = border_shell_mask(h, w)
+    if np.count_nonzero(mask) == 0:
+        return bgr
+    background = np.median(bgr.reshape(-1, 3), axis=0).astype(np.uint8)
+    out = np.zeros_like(bgr)
+    out[:, :] = background
+    out[mask.astype(bool)] = bgr[mask.astype(bool)]
+    return out
+
+
+def border_shell_mask(height: int, width: int) -> np.ndarray:
+    mask = np.zeros((height, width), dtype=np.uint8)
+    if height <= 0 or width <= 0:
+        return mask
+    top = min(height, max(8, int(round(height * 0.18))))
+    bottom = min(height, max(6, int(round(height * 0.10))))
+    side = min(width, max(6, int(round(width * 0.075))))
+    mask[:top, :] = 1
+    mask[max(0, height - bottom):, :] = 1
+    mask[:, :side] = 1
+    mask[:, max(0, width - side):] = 1
+    return mask
 
 
 def trim_visual_content(image: np.ndarray) -> np.ndarray:
@@ -316,14 +374,24 @@ def visual_similarity(a: Dict[str, object], b: Dict[str, object]) -> float:
         dict(b.get("structural") or {}),
     )
 
-    score = (
-        0.24 * edge_score
-        + 0.12 * gray_score
-        + 0.14 * aspect_score
-        + 0.10 * stats_score
-        + 0.05 * hash_score
-        + 0.35 * structure_score
-    )
+    if a.get("_focus") == "border_shell" or b.get("_focus") == "border_shell":
+        score = (
+            0.25 * edge_score
+            + 0.10 * gray_score
+            + 0.10 * aspect_score
+            + 0.08 * stats_score
+            + 0.04 * hash_score
+            + 0.43 * structure_score
+        )
+    else:
+        score = (
+            0.24 * edge_score
+            + 0.12 * gray_score
+            + 0.14 * aspect_score
+            + 0.10 * stats_score
+            + 0.05 * hash_score
+            + 0.35 * structure_score
+        )
     score *= compatibility
     return float(max(0.0, min(1.0, score)))
 
@@ -450,6 +518,183 @@ def extract_structural_features(
     }
 
 
+def extract_border_structural_features(
+    gray: np.ndarray,
+    hsv: np.ndarray,
+    edges: np.ndarray,
+    content_mask: np.ndarray,
+) -> Dict[str, object]:
+    height, width = gray.shape[:2]
+    area = float(max(1, width * height))
+    shell = border_shell_mask(height, width).astype(bool)
+    shell_edges = np.zeros_like(edges)
+    shell_edges[shell] = edges[shell]
+    shell_content = np.zeros_like(content_mask)
+    shell_content[shell] = content_mask[shell]
+    value = hsv[:, :, 2]
+    saturation = hsv[:, :, 1]
+    color_mask = ((value > 42) & (saturation > 28)).astype(np.uint8)
+    color_mask[~shell] = 0
+
+    top_band = band_slice(height, width, "top")
+    bottom_band = band_slice(height, width, "bottom")
+    left_band = band_slice(height, width, "left")
+    right_band = band_slice(height, width, "right")
+    top_density = edge_ratio(shell_edges, top_band)
+    bottom_density = edge_ratio(shell_edges, bottom_band)
+    left_density = edge_ratio(shell_edges, left_band)
+    right_density = edge_ratio(shell_edges, right_band)
+    top_color = color_ratio(color_mask, top_band)
+    bottom_color = color_ratio(color_mask, bottom_band)
+    left_color = color_ratio(color_mask, left_band)
+    right_color = color_ratio(color_mask, right_band)
+    corner_scores = border_corner_scores(shell_edges, width, height)
+    line_count, diagonal_count = border_line_counts(shell_edges, width, height)
+    dot_count = top_dot_count(color_mask, width, height)
+    title_plate = title_plate_score(color_mask, width, height)
+    closedness = min(top_density + top_color, 1.0) + min(bottom_density + bottom_color, 1.0)
+    closedness += min(left_density + left_color, 1.0) + min(right_density + right_color, 1.0)
+    closedness /= 4.0
+    asymmetry = abs(left_density - right_density) + abs(top_density - bottom_density)
+    shell_ratio = float(np.count_nonzero(shell_content)) / area
+
+    forms: List[str] = ["border_frame"]
+    if title_plate >= 0.055 or dot_count >= 2:
+        forms.append("border_title_bar")
+    if diagonal_count >= 1:
+        forms.append("border_cut_corner")
+    if closedness < 0.36:
+        forms.append("border_open_frame")
+    if closedness >= 0.52:
+        forms.append("border_closed_frame")
+
+    primary = choose_primary_form(forms, {
+        "border_frame": closedness,
+        "border_title_bar": title_plate + 0.08 * min(dot_count, 3),
+        "border_cut_corner": min(1.0, diagonal_count / 3.0),
+        "border_open_frame": 1.0 - closedness,
+        "border_closed_frame": closedness,
+    })
+
+    vector = [
+        top_density,
+        bottom_density,
+        left_density,
+        right_density,
+        top_color,
+        bottom_color,
+        left_color,
+        right_color,
+        min(1.0, sum(corner_scores) / 4.0),
+        min(1.0, line_count / 12.0),
+        min(1.0, diagonal_count / 4.0),
+        min(1.0, dot_count / 4.0),
+        min(1.0, title_plate * 8.0),
+        min(1.0, shell_ratio * 4.0),
+    ]
+
+    return {
+        "primaryForm": primary,
+        "forms": forms,
+        "vector": round_list(vector),
+        "topEdgeDensity": round(float(top_density), 5),
+        "bottomEdgeDensity": round(float(bottom_density), 5),
+        "leftEdgeDensity": round(float(left_density), 5),
+        "rightEdgeDensity": round(float(right_density), 5),
+        "cornerScore": round(float(sum(corner_scores) / max(1, len(corner_scores))), 5),
+        "lineCount": int(line_count),
+        "diagonalLineCount": int(diagonal_count),
+        "topDotCount": int(dot_count),
+        "titlePlateScore": round(float(title_plate), 5),
+        "closedness": round(float(closedness), 5),
+        "asymmetry": round(float(asymmetry), 5),
+        "shellContentRatio": round(float(shell_ratio), 5),
+    }
+
+
+def band_slice(height: int, width: int, name: str) -> Tuple[slice, slice]:
+    top = max(4, int(height * 0.18))
+    bottom = max(4, int(height * 0.10))
+    side = max(4, int(width * 0.075))
+    if name == "top":
+        return slice(0, min(height, top)), slice(0, width)
+    if name == "bottom":
+        return slice(max(0, height - bottom), height), slice(0, width)
+    if name == "left":
+        return slice(0, height), slice(0, min(width, side))
+    return slice(0, height), slice(max(0, width - side), width)
+
+
+def edge_ratio(edges: np.ndarray, band: Tuple[slice, slice]) -> float:
+    roi = edges[band]
+    return float(np.count_nonzero(roi)) / float(max(1, roi.size))
+
+
+def color_ratio(mask: np.ndarray, band: Tuple[slice, slice]) -> float:
+    roi = mask[band]
+    return float(np.count_nonzero(roi)) / float(max(1, roi.size))
+
+
+def border_corner_scores(edges: np.ndarray, width: int, height: int) -> List[float]:
+    corner_w = max(8, int(width * 0.18))
+    corner_h = max(8, int(height * 0.18))
+    corners = [
+        edges[:corner_h, :corner_w],
+        edges[:corner_h, max(0, width - corner_w):],
+        edges[max(0, height - corner_h):, :corner_w],
+        edges[max(0, height - corner_h):, max(0, width - corner_w):],
+    ]
+    return [min(1.0, float(np.count_nonzero(corner)) / float(max(1, corner.size)) * 12.0) for corner in corners]
+
+
+def border_line_counts(edges: np.ndarray, width: int, height: int) -> Tuple[int, int]:
+    segments = cv2.HoughLinesP(
+        edges,
+        1,
+        np.pi / 180,
+        threshold=max(12, int(min(width, height) * 0.08)),
+        minLineLength=max(10, int(min(width, height) * 0.12)),
+        maxLineGap=max(4, int(min(width, height) * 0.035)),
+    )
+    if segments is None:
+        return 0, 0
+    total = 0
+    diagonal = 0
+    for item in segments[:, 0, :]:
+        x1, y1, x2, y2 = [int(v) for v in item]
+        length = float(((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5)
+        if length < max(8, min(width, height) * 0.08):
+            continue
+        total += 1
+        angle = abs(np.degrees(np.arctan2(y2 - y1, x2 - x1)))
+        angle = min(angle, 180 - angle)
+        if 12 <= angle <= 78:
+            diagonal += 1
+    return total, diagonal
+
+
+def top_dot_count(mask: np.ndarray, width: int, height: int) -> int:
+    top_h = max(8, int(height * 0.18))
+    left_w = max(12, int(width * 0.22))
+    roi = mask[:top_h, :left_w]
+    contours, _ = cv2.findContours(roi, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    count = 0
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        area = cv2.contourArea(contour)
+        if 2 <= w <= max(14, width * 0.05) and 2 <= h <= max(14, height * 0.08) and area <= max(90, width * height * 0.002):
+            count += 1
+    return count
+
+
+def title_plate_score(mask: np.ndarray, width: int, height: int) -> float:
+    top_h = max(8, int(height * 0.18))
+    center_x1 = int(width * 0.18)
+    center_x2 = int(width * 0.82)
+    roi = mask[:top_h, center_x1:center_x2]
+    return float(np.count_nonzero(roi)) / float(max(1, roi.size))
+
+
 def structural_similarity(a: Dict[str, object], b: Dict[str, object]) -> float:
     if not a or not b:
         return 0.45
@@ -489,6 +734,23 @@ def structural_compatibility(a: Dict[str, object], b: Dict[str, object]) -> floa
 
 
 def structural_metric_similarity(a: Dict[str, object], b: Dict[str, object]) -> float:
+    if form_family(str(a.get("primaryForm") or "")) == "border" or form_family(str(b.get("primaryForm") or "")) == "border":
+        specs = [
+            ("topEdgeDensity", 0.18),
+            ("bottomEdgeDensity", 0.18),
+            ("leftEdgeDensity", 0.18),
+            ("rightEdgeDensity", 0.18),
+            ("cornerScore", 1.0),
+            ("lineCount", 12.0),
+            ("diagonalLineCount", 4.0),
+            ("topDotCount", 4.0),
+            ("titlePlateScore", 0.18),
+            ("closedness", 1.0),
+            ("asymmetry", 1.0),
+            ("shellContentRatio", 0.6),
+        ]
+        scores = [scalar_similarity(a, b, key, scale) for key, scale in specs]
+        return float(sum(scores) / max(1, len(scores)))
     specs: List[Tuple[str, float]] = [
         ("tallBarCount", 10.0),
         ("ellipseCapCount", 10.0),
@@ -511,6 +773,8 @@ def same_form_family(a: str, b: str) -> bool:
 
 
 def form_family(form: str) -> str:
+    if "border" in form or "frame" in form:
+        return "border"
     if "table" in form:
         return "table"
     if "pie" in form or "ring" in form or "donut" in form:
@@ -528,6 +792,11 @@ def choose_primary_form(forms: List[str], scores: Dict[str, float]) -> str:
     if not forms:
         return ""
     priority = {
+        "border_title_bar": 10,
+        "border_cut_corner": 9,
+        "border_closed_frame": 8,
+        "border_open_frame": 8,
+        "border_frame": 7,
         "table_grid": 8,
         "donut_pie": 7,
         "pie": 6,

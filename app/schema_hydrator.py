@@ -1746,6 +1746,8 @@ def apply_semantic_facts_to_option(option: Dict[str, Any], facts: Dict[str, Any]
             set_option_path_if_compatible(option, path, unit, overwrite_empty=True)
     if colors:
         for index, path in enumerate(semantic_paths.get("color") or []):
+            if is_background_color_path(path):
+                continue
             value: Any = colors if accepts_color_list_path(path) else color_for_option_path(path, colors, index)
             set_option_path_if_compatible(option, path, value, overwrite_empty=True)
         apply_palette_entrypoints(option, colors)
@@ -1886,7 +1888,7 @@ def set_option_path_if_compatible(option: Dict[str, Any], path: str, value: Any,
     return set_option_path_targets([option], parts, value, overwrite_empty)
 
 
-def set_option_path_targets(targets: List[Any], parts: List[str], value: Any, overwrite_empty: bool) -> bool:
+def set_option_path_targets(targets: List[Any], parts: List[str], value: Any, overwrite_empty: bool, indexed: bool = False) -> bool:
     if not parts:
         return False
     raw_part = parts[0]
@@ -1897,7 +1899,8 @@ def set_option_path_targets(targets: List[Any], parts: List[str], value: Any, ov
         for index, target in enumerate(targets):
             if not isinstance(target, dict) or part not in target:
                 continue
-            changed = assign_option_value(target, part, indexed_path_value(value, index), overwrite_empty) or changed
+            target_value = indexed_path_value(value, index) if indexed else value
+            changed = assign_option_value(target, part, target_value, overwrite_empty) or changed
         return changed
 
     next_targets: List[Any] = []
@@ -1909,7 +1912,7 @@ def set_option_path_targets(targets: List[Any], parts: List[str], value: Any, ov
             next_targets.extend(item for item in child if isinstance(item, dict))
         elif not is_array:
             next_targets.append(child)
-    return set_option_path_targets(next_targets, parts[1:], value, overwrite_empty)
+    return set_option_path_targets(next_targets, parts[1:], value, overwrite_empty, indexed=indexed or is_array)
 
 
 def assign_option_value(target: Dict[str, Any], key: str, value: Any, overwrite_empty: bool) -> bool:
@@ -1944,6 +1947,16 @@ def indexed_path_value(value: Any, index: int) -> Any:
 def accepts_color_list_path(path: str) -> bool:
     leaf = str(path or "").lower().rsplit(".", 1)[-1].replace("[]", "")
     return leaf in {"colors", "colorlist"}
+
+
+def is_background_color_path(path: str) -> bool:
+    normalized = str(path or "").lower()
+    leaf = normalized.rsplit(".", 1)[-1].replace("[]", "")
+    return (
+        "background" in normalized
+        or leaf in {"bgcolor", "headerbgc", "oddrowbgc", "evenrowbgc"}
+        or leaf.endswith("bgc")
+    )
 
 
 def get_option_path(option: Dict[str, Any], path: str) -> Any:

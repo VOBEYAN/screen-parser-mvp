@@ -20,7 +20,7 @@ from .component_profiles import load_component_profiles, normalize_visual_form, 
 from .local_qwen_vl import LocalQwenVLComponentRecognizer
 from .matcher import TYPE_TO_CATEGORIES
 from .schemas import BBox, ComponentRecord, Node
-from .visual_matcher import VisualReferenceLibrary, extract_image_features, form_family
+from .visual_matcher import VisualReferenceLibrary, border_shell_mask, extract_image_features, form_family
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -390,13 +390,17 @@ class MultimodalComponentClassifier:
                 continue
 
             crop = crop_node(image, node.bbox)
-            crop_features = extract_image_features(cv2.cvtColor(np.array(crop.convert("RGB")), cv2.COLOR_RGB2BGR))
+            feature_focus = "border_shell" if node.type in {"Border", "Panel"} else "content"
+            crop_features = extract_image_features(cv2.cvtColor(np.array(crop.convert("RGB")), cv2.COLOR_RGB2BGR), focus=feature_focus)
             local_result = classify_crop_locally(crop, node)
             node_ocr = ocr_for_node(paddle_ocr, node.bbox)
             if node_ocr["text"]:
                 local_result["text"] = node_ocr["text"]
                 local_result["ocrText"] = node_ocr["text"]
                 local_result = apply_ocr_semantic_cues(local_result, str(node_ocr["text"] or ""))
+            if node.type in {"Border", "Panel"}:
+                local_result["contentType"] = "panel" if node.type == "Panel" else "border"
+                local_result["componentType"] = node.type
             local_result = add_crop_visual_signature(local_result, crop)
             line_dataset = extract_line_dataset_from_crop(crop, node.bbox, node_ocr)
             if line_dataset:
@@ -642,7 +646,7 @@ class MultimodalComponentClassifier:
             predicted_type = node.type
             effective_result["contentType"] = content_type
             effective_result["componentType"] = predicted_type
-            effective_result["componentId"] = effective_result.get("componentId") or node.component_id
+            effective_result["componentId"] = ""
             effective_result["visualForm"] = "border_frame"
             effective_result["specificVisualForm"] = "border_frame"
 
@@ -771,6 +775,16 @@ class MultimodalComponentClassifier:
             attribute_gate = component_attribute_gate_score(record, profile, target_visual_form, result, self.visual_library)
             score += 0.72 * attribute_gate
             score += 0.32 * component_visual_gate_score(record.key, content_type, target_visual_form, result)
+            if content_type in {"border", "panel"} and record.category == "Borders":
+                shell_visual = max(0.0, float(visual_score or 0.0))
+                score = (
+                    0.08
+                    + 1.22 * shell_visual
+                    + 0.05 * base
+                    + 0.10 * profile_score
+                    + 0.08 * attribute_gate
+                    + aspect_score(record, node)
+                )
             if record.key == llm_component_id:
                 score += 0.64 + 0.34 * llm_confidence + 0.42 * llm_decision_strength + 0.16 * profile_score
                 if visual_score is not None:
@@ -1347,6 +1361,9 @@ def infer_crop_visual_signature(crop: Image.Image, content_type: str, text: str 
     saturation = hsv[:, :, 1]
     mask = ((value > 45) & (saturation > 35)).astype(np.uint8)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+    normalized_type = normalize_content_type(content_type)
+    if normalized_type in {"border", "panel"}:
+        mask = cv2.bitwise_and(mask, border_shell_mask(height, width))
     palette = dominant_hex_palette(rgb, hsv, mask)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     boxes = []
@@ -1388,7 +1405,6 @@ def infer_crop_visual_signature(crop: Image.Image, content_type: str, text: str 
     ]
 
     visual_form = ""
-    normalized_type = normalize_content_type(content_type)
     percent_count = len(re.findall(r"\d+(?:\.\d+)?%", text))
     chart_like_type = normalized_type in {"bar_chart", "chart", "scatter_chart", "decorate", ""}
     if chart_like_type:

@@ -31,14 +31,15 @@ class ComponentMatcher:
         for node in nodes:
             if node.type in STRUCTURE_ONLY_TYPES:
                 continue
-            crop_features = extract_crop_features(image, node.bbox) if image is not None else None
+            focus = "border_shell" if node.type in {"Border", "Panel"} else "content"
+            crop_features = extract_crop_features(image, node.bbox, focus=focus) if image is not None else None
             candidates = self.match_node(node, top_k=top_k, crop_features=crop_features)
             node.candidates = candidates
             if candidates:
                 node.component_id = candidates[0]["componentId"]
 
     def match_node(self, node: Node, top_k: int = 5, crop_features: Optional[Dict[str, object]] = None) -> List[Dict[str, object]]:
-        if node.component_id and node.component_id in self.library.by_key:
+        if node.type not in {"Border", "Panel"} and node.component_id and node.component_id in self.library.by_key:
             record = self.library.by_key[node.component_id]
             return [
                 {
